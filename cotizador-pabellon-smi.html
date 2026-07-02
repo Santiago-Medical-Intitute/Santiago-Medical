@@ -400,7 +400,7 @@ $('amax').onclick=()=>{ $('adic').value=Math.min(5,(+$('adic').value+0.5)); calc
 $('caso').addEventListener('change',loadCaso);
 ['horas','adic','insumo','fijo','recup','diacama','pNombre','pRut','pNota'].forEach(id=>$(id).addEventListener('input',calc));
 $('margen').addEventListener('input',calc);
-fillMenus();
+
 $('insAdd').addEventListener('click',insAddFn);
 $('extAdd').addEventListener('click',extAddFn);
 $('anestOn').addEventListener('change',calc);
@@ -610,7 +610,7 @@ const EXTRA_MENU=[
 ];
 let INSUMOS_ADD=[];   // {nombre, arancel, floor}
 let EXTRAS_ADD=[];    // {nombre, cant, unit, floor}
-
+fillMenus();
 function fillMenus(){
   $('insMenu').innerHTML=INSUMO_MENU.map((x,i)=>'<option value="'+i+'">'+x.n+' · '+clp(x.v)+'</option>').join('');
   $('extMenu').innerHTML=EXTRA_MENU.map((x,i)=>'<option value="'+i+'">'+x.n+' · '+clp(x.v)+'</option>').join('');
