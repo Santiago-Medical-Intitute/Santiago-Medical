@@ -669,6 +669,10 @@ async function cargarCatalogo(clave){
       CONVENIOS[v.cirujano_id+'|'+v.cirugia_id]={costo:+v.costo_insumo||0,dur:+v.horas||0};
       (MED_CIRUGIAS[v.cirujano_id]=MED_CIRUGIAS[v.cirujano_id]||[]).push(v.cirugia_id);
     });
+    if(Array.isArray(d.combinables) && d.combinables.length){
+          INSUMO_MENU = d.combinables.map(x=>({n:x.nombre, v:x.valor}));
+          if(typeof fillMenus==='function') fillMenus();
+    }
     reindexCir();
     $('medSel').innerHTML=''; CIRUJANOS.forEach((m,i)=>{ const o=document.createElement('option'); o.value=i; o.textContent=m.n; $('medSel').appendChild(o); });
     poblarCirugias(); loadSel();
@@ -911,7 +915,7 @@ function buildPDF(folio,fname){
 function hosp(){ return [...$('hospSeg').children].find(b=>b.classList.contains('on')).dataset.v==='1'; }
 
 // ── Adicionales: menús precargados (aranceles de referencia) ──
-const INSUMO_MENU=[
+const INSUMO_MENU_FALLBACK=[
  {n:'Lifting de glúteo',v:461192},
  {n:'Lifting dorsal / muslos / brazos / glúteos',v:897672},
  {n:'Lipo mayor (>2500cc, >2h)',v:825825},
@@ -927,6 +931,7 @@ const INSUMO_MENU=[
  {n:'Resección de cicatriz',v:525000},
  {n:'Insumos / medicamentos anestesia regional',v:113454}
 ];
+  let INSUMO_MENU=INSUMO_MENU_FALLBACK.slice();
 const EXTRA_MENU=[
  {n:'Sutura STRATAFIX PDO 2/0 (SXPD2B420)',v:63130},
  {n:'Biopsia corriente (08-01-008)',v:109000},
