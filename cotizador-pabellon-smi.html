@@ -687,7 +687,7 @@ function poblarCirugias(){
 poblarCirugias();
 
 let mode='cli';
-function loadSel(){ const {ci,me,cv}=convenioActual(); $('horas').value=(cv&&cv.dur)?cv.dur:ci.dur; $('dcto').value=Math.round(me.dcto*100); $('dctoIns').value=Math.round((me.dctoIns||0)*100); $('insumo').value=ci.insumo; $('adic').value=0; INSUMOS_ADD=[]; EXTRAS_ADD=[]; renderIns(); renderExt(); $('anestOn').checked=!!ci.anest; ANEST_MANUAL=false; setHosp(ci.hosp?1:0); }
+function loadSel(){ const {ci,me,cv}=convenioActual(); $('horas').value=(cv&&cv.dur)?cv.dur:ci.dur; $('dcto').value=Math.round(me.dcto*100); $('dctoIns').value=Math.round((me.dctoIns||0)*100); $('insumo').value=(cv&&cv.costo!=null)?cv.costo:ci.insumo; $('adic').value=0; INSUMOS_ADD=[]; EXTRAS_ADD=[]; renderIns(); renderExt(); $('anestOn').checked=!!ci.anest; ANEST_MANUAL=false; setHosp(ci.hosp?1:0); }
 function setHosp(v){ [...$('hospSeg').children].forEach(b=>b.classList.toggle('on',+b.dataset.v===v)); calc(); }
 $('hospSeg').addEventListener('click',e=>{ if(e.target.dataset.v!==undefined) setHosp(+e.target.dataset.v); });
 $('modeSeg').addEventListener('click',e=>{ if(!e.target.dataset.m)return; mode=e.target.dataset.m; [...$('modeSeg').children].forEach(b=>b.classList.toggle('on',b.dataset.m===mode)); $('intern').classList.toggle('show',mode==='int'); });
