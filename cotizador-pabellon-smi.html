@@ -774,25 +774,33 @@ function buildPDF(folio,fname){
   doc.text('Fecha '+FECHA,RB,y,{align:'right'});
   y+=8;
 
-  // Caja paciente/cirugía
-  const bx=M, bw=RB-M, bh=30, by=y;
-  doc.setFillColor(...TINT); doc.setDrawColor(...LINE); doc.setLineWidth(0.3);
-  doc.roundedRect(bx,by,bw,bh,2,2,'FD');
-  const colL=bx+6, colR=bx+bw/2+2, ry=by+8, rs=7.5;
-  function field(x,yy,label,val){
-    doc.setFont('helvetica','normal'); doc.setFontSize(7); doc.setTextColor(...MUT);
-    doc.text(label.toUpperCase(),x,yy);
-    doc.setFont('helvetica','bold'); doc.setTextColor(...INK);
-    let txt=String(val||'\u2014'); let fs=10; doc.setFontSize(fs);
-    const maxW=(bw/2)-12;
-    while(doc.getTextWidth(txt)>maxW && fs>7){ fs-=0.5; doc.setFontSize(fs); }
-    while(doc.getTextWidth(txt)>maxW && txt.length>4){ txt=txt.slice(0,-1); }
-    if(txt!==String(val||'\u2014')) txt=txt.replace(/[\s.,;:+]+$/,'')+'\u2026';
-    doc.text(txt,x,yy+4.5);
-  }
-  field(colL,ry,'Paciente',last.paciente); field(colR,ry,'RUT',last.rut);
-  field(colL,ry+rs*1.55,'Cirugía',last.cirugia); field(colR,ry+rs*1.55,'Cirujano',last.cirujano);
-  y=by+bh+9;
+ // Caja paciente/cirugía — altura dinámica según líneas que necesite envolver
+    const bx=M, bw=RB-M;
+    const colL=bx+6, colR=bx+bw/2+2;
+    const fieldW=(bw/2)-12, fsField=10, fieldLH=4.5;
+    doc.setFont('helvetica','bold'); doc.setFontSize(fsField);
+    const pacLines=doc.splitTextToSize(String(last.paciente||'\u2014'),fieldW).length;
+    const rutLines=doc.splitTextToSize(String(last.rut||'\u2014'),fieldW).length;
+    const cirLines=doc.splitTextToSize(String(last.cirugia||'\u2014'),fieldW).length;
+    const cirujLines=doc.splitTextToSize(String(last.cirujano||'\u2014'),fieldW).length;
+    const row1H=4.5+(Math.max(pacLines,rutLines,1)-1)*fieldLH;
+    const row2H=4.5+(Math.max(cirLines,cirujLines,1)-1)*fieldLH;
+    const row2LabelOffset=8+row1H+4;
+    const bh=row2LabelOffset+row2H+6;
+    const by=y;
+    doc.setFillColor(...TINT); doc.setDrawColor(...LINE); doc.setLineWidth(0.3);
+    doc.roundedRect(bx,by,bw,bh,2,2,'FD');
+    const ry=by+8, row2Y=by+row2LabelOffset;
+    function field(x,yy,label,val){
+      doc.setFont('helvetica','normal'); doc.setFontSize(7); doc.setTextColor(...MUT);
+      doc.text(label.toUpperCase(),x,yy);
+      doc.setFont('helvetica','bold'); doc.setFontSize(fsField); doc.setTextColor(...INK);
+      const lines=doc.splitTextToSize(String(val||'\u2014'),fieldW);
+      doc.text(lines,x,yy+4.5);
+    }
+    field(colL,ry,'Paciente',last.paciente); field(colR,ry,'RUT',last.rut);
+    field(colL,row2Y,'Cirugía',last.cirugia); field(colR,row2Y,'Cirujano',last.cirujano);
+    y=by+bh+9;
 
   // Detalle
   doc.setFont('helvetica','bold'); doc.setFontSize(8); doc.setTextColor(...CRIM);
@@ -801,24 +809,30 @@ function buildPDF(folio,fname){
 
   const d=last.detalle||{};
   function item(label,sub,val,bold){
-    const fs=bold?10:9.5;
-    const valTxt=clp(val);
-    doc.setFont('helvetica',bold?'bold':'normal'); doc.setFontSize(fs);
-    const valW=doc.getTextWidth(valTxt);
-    const maxLabW=RB-M-valW-8;
-    let lab=String(label);
-    while(doc.getTextWidth(lab)>maxLabW && lab.length>4){ lab=lab.slice(0,-1); }
-    if(lab!==String(label)) lab=lab.replace(/[\s.,;:]+$/,'')+'…';
-    doc.setTextColor(...(bold?INK:[60,52,55]));
-    doc.text(lab,M,y);
-    const labW=doc.getTextWidth(lab);
-    if(sub){
-      doc.setFont('helvetica','normal'); doc.setFontSize(7.5); doc.setTextColor(...MUT);
-      if(M+labW+3+doc.getTextWidth(sub)<=RB-valW-5) doc.text(sub,M+labW+3,y);
-    }
-    doc.setFont('helvetica',bold?'bold':'normal'); doc.setFontSize(fs); doc.setTextColor(...(bold?INK:[60,52,55]));
-    doc.text(valTxt,RB,y,{align:'right'});
-    y+=4; doc.setDrawColor(240,233,235); doc.setLineWidth(0.2); doc.line(M,y,RB,y); y+=4;
+      const fs=bold?10:9.5;
+      const valTxt=clp(val);
+      doc.setFont('helvetica',bold?'bold':'normal'); doc.setFontSize(fs);
+      const valW=doc.getTextWidth(valTxt);
+      const maxLabW=RB-M-valW-8;
+      doc.setTextColor(...(bold?INK:[60,52,55]));
+      const labLines=doc.splitTextToSize(String(label),maxLabW);
+      doc.text(labLines,M,y);
+      const labW=doc.getTextWidth(labLines[0]);
+      let extraLine=false;
+      if(sub){
+        doc.setFont('helvetica','normal'); doc.setFontSize(7.5); doc.setTextColor(...MUT);
+        if(labLines.length===1 && M+labW+3+doc.getTextWidth(sub)<=RB-valW-5){
+          doc.text(sub,M+labW+3,y);
+        } else {
+          doc.text(sub,M,y+labLines.length*4.3+3);
+          extraLine=true;
+        }
+      }
+      doc.setFont('helvetica',bold?'bold':'normal'); doc.setFontSize(fs); doc.setTextColor(...(bold?INK:[60,52,55]));
+      doc.text(valTxt,RB,y,{align:'right'});
+      const blockLines=labLines.length+(extraLine?1:0);
+      y+=blockLines*4.3+3.5;
+      doc.setDrawColor(240,233,235); doc.setLineWidth(0.2); doc.line(M,y,RB,y); y+=4;
   }
   item('Tiempo de pabellón',last.horas+' h',d.tiempo);
   item('Insumos','arancel',d.insumos);
@@ -841,10 +855,10 @@ function buildPDF(folio,fname){
 
   // Total
   doc.setDrawColor(...INK); doc.setLineWidth(0.5); doc.line(M,y,RB,y); y+=8;
-  doc.setFont('helvetica','bold'); doc.setFontSize(8); doc.setTextColor(...MUT);
-  doc.text('TOTAL COTIZADO',M,y);
-  doc.setFont('times','bold'); doc.setFontSize(26); doc.setTextColor(...CRIM);
-  doc.text(clp(last.total),RB,y+1,{align:'right'}); y+=12;
+    doc.setFont('helvetica','bold'); doc.setFontSize(15); doc.setTextColor(...MUT);
+    doc.text('TOTAL COTIZADO',M,y);
+    doc.setFont('times','bold'); doc.setFontSize(15); doc.setTextColor(...CRIM);
+    doc.text(clp(last.total),RB,y,{align:'right'}); y+=12;
 
   // Nota del usuario
   if(last.nota){
