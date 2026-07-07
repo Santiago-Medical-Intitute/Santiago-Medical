@@ -278,13 +278,23 @@ function renderKpis(){
   const mCot=ROWS.reduce((s,x)=>s+(+x.total||0),0);
   const mOp=ROWS.filter(x=>x.estado==='operada').reduce((s,x)=>s+(+x.total||0),0);
   const enProceso=entregada+agendada;
+  // --- horas operadas y ocupación ---
+  const opRows=ROWS.filter(x=>x.estado==='operada');
+  const hOp=opRows.reduce((s,x)=>s+(+x.horas||0),0);
+  const HORAS_DISP=660; // 3 pabellones × 10 h × 22 días
+  const ocup=Math.round(hOp/HORAS_DISP*100);
+  // --- margen sobre venta, ponderado por monto operado ---
+  const mgSum=opRows.reduce((s,x)=>{ const d=x.detalle||{}; return s+(+d.margen_pct||0)*(+x.total||0); },0);
+  const mgPond=mOp?Math.round(mgSum/mOp*100):0;
   $('kpis').innerHTML=
     kpi('Cotizaciones',total,'entregadas en total')+
     kpi('En proceso',enProceso,entregada+' s/agendar · '+agendada+' agendadas')+
     kpi('Operadas',operada,'cerradas con éxito','pos')+
     kpi('Perdidas',perdida,'no se concretaron','neg')+
     heroKpi('Conversión',convR+'%','sobre resueltas · '+convB+'% del total')+
-    kpi('Monto operado',clp(mOp),'de '+clp(mCot)+' cotizado');
+    kpi('Horas operadas',hOp+' h','de 660 · '+ocup+'% ocupación')+
+    kpi('Monto operado',clp(mOp),'de '+clp(mCot)+' cotizado')+
+    kpi('Margen s/venta',mgPond+'%','ponderado sobre lo operado','pos');
 }
 function kpi(lab,val,sub,cls){ return '<div class="kpi"><div class="lab">'+lab+'</div><div class="val '+(cls||'')+'">'+val+'</div><div class="sub">'+sub+'</div></div>'; }
 function heroKpi(lab,val,sub){ return '<div class="kpi hero"><div class="lab">'+lab+'</div><div class="val">'+val+'</div><div class="sub">'+sub+'</div></div>'; }
