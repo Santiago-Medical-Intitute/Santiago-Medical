@@ -260,7 +260,7 @@ function initUI(){
 /* ═══ CARGAR CASOS ═══ */
 async function cargar(){
   try{
-    const hoy=new Date().toISOString().slice(0,10);
+   const _n=new Date();const hoy=_n.getFullYear()+'-'+String(_n.getMonth()+1).padStart(2,'0')+'-'+String(_n.getDate()).padStart(2,'0');
     const data=await rpc('smi_casos_pabellon',{p_clave:CLAVE,p_pabellon:PAB,p_fecha:hoy});
     CASOS=Array.isArray(data)?data:[];
     renderAll();
