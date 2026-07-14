@@ -261,7 +261,7 @@ function initUI(){
 async function cargar(){
   try{
    const _n=new Date();const hoy=_n.getFullYear()+'-'+String(_n.getMonth()+1).padStart(2,'0')+'-'+String(_n.getDate()).padStart(2,'0');
-    const data=await rpc('smi_casos_pabellon',{p_clave:CLAVE,p_pabellon:PAB,p_fecha:hoy});
+    const data=await rpc('smi_casos_pabellon',{p_clave:CLAVE,p_pabellon:PAB,p_fecha:hoy,p_incluir_activos:true});
     CASOS=Array.isArray(data)?data:[];
     renderAll();
     const ahora=new Date();
