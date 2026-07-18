@@ -561,7 +561,7 @@ function wfHTML(pl, title, tag){
 }
 function renderContribucion(){
   const _f=$('contribFoco'); if(_f) _f.textContent=mShort(FOCUS);
-  const ops=ROWS.filter(x=>x.estado==='operada' && opMonth(x)===FOCUS);
+  const ops=ROWS.filter(x=>x.estado==='operada' && x.origen!=='historico' && opMonth(x)===FOCUS);
   let g={pab:0,recu:0,cama:0,ins:0,anest:0,desc:0,descIns:0};
   ops.forEach(x=>{ const d=x.detalle||{};
     g.pab+=num(d.tiempo); g.recu+=num(d.recuperacion); g.cama+=num(d.diacama);
