@@ -1,0 +1,526 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Anestesia · SMI</title>
+<link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:wght@500;600&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+:root{
+  --crimson:#CD1D52; --deep:#B22030; --ink:#1C1719; --muted:#857479; --faint:#A99CA0;
+  --bg:#FAF7F6; --card:#FFFFFF; --line:#ECE0E2; --tint:#F7F0F1;
+  --pos:#1E7A4D; --neg:#C0202F; --warn:#B7791F; --info:#2C5F8D;
+  --serif:'Cormorant Garamond',Georgia,serif; --sans:'Inter',-apple-system,sans-serif;
+}
+*{box-sizing:border-box;margin:0;padding:0}
+body{background:var(--bg);color:var(--ink);font-family:var(--sans);font-size:15px;-webkit-text-size-adjust:100%}
+.wrap{max-width:1180px;margin:0 auto;padding:18px 16px 60px}
+
+/* Login */
+#login{max-width:380px;margin:70px auto;background:var(--card);border:1px solid var(--line);border-radius:16px;padding:30px;text-align:center}
+#login h1{font-family:var(--serif);font-size:31px;font-weight:600}
+#login .sub{color:var(--muted);font-size:13px;margin:3px 0 20px}
+#login input{width:100%;border:1px solid var(--line);border-radius:9px;padding:12px;font-size:15px;font-family:var(--sans)}
+#login button{width:100%;margin-top:10px;border:0;border-radius:9px;padding:13px;background:var(--deep);color:#fff;font-weight:700;font-size:15px;cursor:pointer;font-family:var(--sans)}
+#loginErr{color:var(--neg);font-size:12.5px;margin-top:9px;min-height:16px}
+
+.mast{display:flex;justify-content:space-between;align-items:flex-end;gap:12px;flex-wrap:wrap;margin-bottom:14px}
+.mast h1{font-family:var(--serif);font-size:29px;font-weight:600;line-height:1.1}
+.mast .sub{color:var(--muted);font-size:12.5px}
+.mast .who{font-size:12px;color:var(--muted);text-align:right}
+.btn{border:1px solid var(--line);background:#fff;border-radius:8px;padding:8px 12px;font-family:var(--sans);font-size:12.5px;font-weight:600;color:var(--ink);cursor:pointer}
+.btn:hover{background:var(--tint)}
+
+/* KPIs */
+.kpis{display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:16px}
+.kbox{background:var(--card);border:1px solid var(--line);border-radius:14px;padding:16px}
+.kbox.mine{border-color:var(--pos);border-width:2px}
+.kbox.lost{border-color:var(--neg);border-width:2px}
+.kbox .lab{font-size:10.5px;font-weight:700;letter-spacing:1.1px;text-transform:uppercase;color:var(--muted)}
+.kbox .val{font-family:var(--serif);font-size:38px;font-weight:600;line-height:1.05;margin-top:5px}
+.kbox.mine .val{color:var(--pos)} .kbox.lost .val{color:var(--neg)}
+.kbox .det{color:var(--muted);font-size:12.5px;margin-top:4px}
+.kbox .money{font-weight:700;font-size:15px;margin-top:6px}
+.iso{height:14px;width:auto;vertical-align:-2px;margin:0 3px}
+.iso-big{height:30px;width:auto}
+.kbox.mine .money{color:var(--pos)} .kbox.lost .money{color:var(--neg)}
+
+/* Semana */
+.nav{display:flex;align-items:center;gap:10px;margin-bottom:12px}
+.nav .rng{font-weight:600;font-size:13.5px;flex:1}
+
+.stitle{font-family:var(--serif);font-size:22px;font-weight:600;margin:20px 0 9px}
+.stitle .cnt{font-family:var(--sans);font-size:12px;font-weight:700;background:var(--crimson);color:#fff;border-radius:999px;padding:2px 8px;vertical-align:middle;margin-left:6px}
+
+.cx{background:var(--card);border:1px solid var(--line);border-radius:12px;padding:14px;margin-bottom:10px}
+.cx.urg{border-color:var(--neg);border-width:2px}
+.cx-top{display:flex;justify-content:space-between;gap:12px;flex-wrap:wrap}
+.cx-folio{color:var(--crimson);font-weight:700;font-size:11px}
+.cx-pac{font-family:var(--serif);font-size:20px;font-weight:600;line-height:1.2}
+.cx-meta{color:var(--muted);font-size:12.5px;margin-top:2px}
+.cx-when{text-align:right;font-size:12.5px}
+.cx-when .d{font-weight:700}
+.cx-monto{font-family:var(--serif);font-size:20px;font-weight:600;margin-top:3px}
+.cx-monto.pos{color:var(--pos)} .cx-monto.neg{color:var(--neg)}
+
+.asig{display:flex;gap:8px;align-items:center;margin-top:11px;flex-wrap:wrap}
+.asig select{flex:1;min-width:170px;border:1px solid var(--line);border-radius:8px;padding:9px;font-family:var(--sans);font-size:13.5px;background:#fff}
+.asig .ok{color:var(--pos);font-size:12px;font-weight:600}
+.asig .warn{color:var(--neg);font-size:12px;font-weight:700}
+.cerrado{display:flex;align-items:center;gap:8px;margin-top:11px;background:var(--tint);
+  border:1px solid var(--line);border-radius:8px;padding:9px 11px;flex-wrap:wrap}
+.cerrado .n{font-weight:700;font-size:13.5px}
+.cerrado .c{color:var(--muted);font-size:11.5px}
+.cerrado .sinreg{color:var(--neg);font-weight:700;font-size:13px}
+.mini{border:1px solid var(--line);background:#fff;border-radius:6px;padding:4px 8px;
+  font-family:var(--sans);font-size:11px;font-weight:600;color:var(--muted);cursor:pointer}
+
+.tag{display:inline-block;font-size:9.5px;font-weight:700;border-radius:5px;padding:2px 6px;margin:5px 4px 0 0}
+.tag.al{background:#FBE9EB;color:var(--neg)}
+.tag.wa{background:#FBF3E2;color:var(--warn)}
+.tag.in{background:#E8F0FA;color:var(--info)}
+.tag.no{background:#F0EAEB;color:var(--muted)}
+.tag.clic{cursor:pointer}
+
+.empty{color:var(--muted);font-size:13.5px;background:var(--card);border:1px dashed var(--line);border-radius:12px;padding:18px;text-align:center}
+
+#modal{position:fixed;inset:0;background:rgba(28,23,25,.55);display:none;z-index:90;padding:14px;overflow-y:auto}
+#modal.on{display:block}
+.mbox{max-width:600px;margin:22px auto;background:var(--card);border-radius:16px;padding:22px}
+.mbox h3{font-family:var(--serif);font-size:24px;font-weight:600;line-height:1.2}
+.mbox .sub{color:var(--muted);font-size:13px;margin-top:2px}
+.mrow{display:grid;grid-template-columns:1fr 1fr;gap:10px 16px;margin-top:14px}
+.mrow .l{color:var(--muted);font-size:11px}
+.mrow .v{font-weight:600;font-size:13.5px;margin-top:1px}
+.msec{margin-top:15px;padding-top:12px;border-top:1px solid var(--line)}
+.msec .t{font-size:10.5px;font-weight:700;letter-spacing:1.1px;text-transform:uppercase;color:var(--muted);margin-bottom:6px}
+.alerta{background:#FBE9EB;border:1px solid #F0C6CC;border-radius:9px;padding:10px 12px;margin-bottom:8px;font-size:13px;color:var(--neg)}
+.alerta.wa{background:#FBF3E2;border-color:#E9D9AE;color:var(--warn)}
+
+@media(max-width:720px){ .kpis{grid-template-columns:1fr} .mrow{grid-template-columns:1fr} }
+
+/* ═══ CEJAS ═══ */
+.tabs{display:flex;gap:4px;margin:18px 0 14px;border-bottom:2px solid var(--line);flex-wrap:wrap}
+.tab{padding:10px 18px;font-size:13.5px;font-weight:600;color:var(--muted);cursor:pointer;
+border-bottom:2px solid transparent;margin-bottom:-2px;white-space:nowrap}
+.tab:hover{color:var(--ink)}
+.tab.on{color:var(--crimson);border-bottom-color:var(--crimson)}
+.tab .cnt2{background:var(--crimson);color:#fff;border-radius:999px;padding:1px 7px;font-size:11px;font-weight:700;margin-left:5px}
+.panel{display:none}.panel.on{display:block}
+
+/* ═══ GRILLA DÍA × PABELLÓN ═══ */
+.wg{display:grid;grid-template-columns:52px repeat(3,1fr);border:1px solid var(--line);
+border-radius:12px;overflow:hidden;background:var(--card)}
+.wg-corner{background:var(--tint);border-bottom:1px solid var(--line);border-right:1px solid var(--line)}
+.wg-ph{padding:9px 8px;text-align:center;font-size:12.5px;font-weight:700;color:#fff;border-bottom:1px solid var(--line)}
+.wg-ph.p1{background:#3B6FB3}.wg-ph.p2{background:#9B3A8E}.wg-ph.p3{background:#1E7A4D}
+.wg-day{padding:8px 4px;font-size:11.5px;font-weight:600;color:var(--muted);text-align:center;
+border-bottom:1px solid var(--line);border-right:1px solid var(--line);background:var(--tint)}
+.wg-day.today{background:#FBF3E2;color:var(--warn)}
+.wg-cell{padding:5px;border-bottom:1px solid var(--line);border-right:1px solid var(--line);min-height:64px}
+.wg-cell:nth-child(4n){border-right:none}
+.blk{border-radius:7px;padding:6px 7px;margin-bottom:4px;font-size:11.5px;line-height:1.32;
+border:1px solid var(--line);border-left:3px solid var(--faint);background:#FFFFFF}
+.blk.smi{border-color:#F0C9D3;border-left-color:var(--crimson);background:#FDF4F6}
+.blk.smi.falta{border-left-color:var(--neg);background:#FBE9EB}
+.blk.hecho{opacity:.72}
+.blk .f{font-weight:700;color:var(--crimson);font-size:9.5px;letter-spacing:.02em}
+.blk .p{font-weight:600;color:var(--ink)}
+.blk .m{color:var(--muted);font-size:10.5px}
+.blk select{width:100%;margin-top:5px;border:1px solid var(--line);border-radius:6px;
+padding:4px 5px;font-family:var(--sans);font-size:10.5px;background:#fff;color:var(--ink)}
+.blk .ext{margin-top:4px;font-size:10.5px;color:var(--muted);font-style:italic}
+.blk .lock{margin-top:4px;font-size:10.5px;color:var(--muted)}
+.blk .lock b{color:var(--ink);font-style:normal}
+@media(max-width:760px){.wg{grid-template-columns:42px repeat(3,1fr)}.blk{font-size:10.5px}}
+
+</style>
+</head>
+<body>
+
+<div id="login">
+  <img id="isoLogin" alt="" style="height:44px;width:auto;margin-bottom:10px">
+  <h1>Anestesia</h1>
+  <div class="sub">Santiago Medical Institute</div>
+  <input type="password" id="clave" placeholder="Clave" autocomplete="current-password">
+  <button id="btnLogin">Entrar</button>
+  <div id="loginErr"></div>
+</div>
+
+<div id="modal"><div class="mbox" id="mbox"></div></div>
+
+<div class="wrap" id="app" style="display:none">
+  <header class="mast">
+    <div style="display:flex;align-items:center;gap:11px">
+      <img class="iso-big" id="isoHdr" alt="">
+      <div>
+        <h1>Coordinación de Anestesia</h1>
+        <div class="sub">Santiago Medical Institute</div>
+      </div>
+    </div>
+    <div>
+      <div class="who" id="who"></div>
+      <button class="btn" id="btnRefresh" style="margin-top:6px">Actualizar</button>
+    </div>
+  </header>
+
+  <div class="kpis" id="kpis"></div>
+
+  <div class="nav">
+    <button class="btn" id="prev">‹ Anterior</button>
+    <div class="rng" id="rng"></div>
+    <button class="btn" id="next">Siguiente ›</button>
+  </div>
+
+  <div class="tabs" id="tabs">
+    <div class="tab on" data-t="grilla">Grilla semanal</div>
+    <div class="tab" data-t="lista">Lista detallada</div>
+  </div>
+
+  <div class="panel on" id="p-grilla">
+    <div id="grilla"></div>
+  </div>
+
+  <div class="panel" id="p-lista">
+    <div id="conSMI"></div>
+    <div id="sinSMI"></div>
+  </div>
+</div>
+
+<script>
+const SUPA_URL='https://rhpguniznuhljiigwetq.supabase.co';
+const SUPA_KEY='sb_publishable_lVaI9a2wWFa0PSL3edPiRA_cVMlXDwG';
+const $=id=>document.getElementById(id);
+let CLAVE='', SESION='', CASOS=[], STAFF=[], OFF=0, PUEDE_CORREGIR=false;
+
+const clp=n=>'$'+Math.round(n||0).toLocaleString('es-CL');
+const ISO='data:image/png;base64,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';
+/* Mismo piso que usa el cotizador: $250.000 la primera hora + $100.000 cada hora adicional */
+const honorario=h=>h>0?250000+100000*Math.max(0,h-1):0;
+const horasDe=c=>+(c.horas||((c.duracion_cotizada_min||0)/60))||0;
+const esc=s=>String(s==null?'':s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+
+async function rpc(fn,body){
+  const r=await fetch(SUPA_URL+'/rest/v1/rpc/'+fn,{method:'POST',
+    headers:{'apikey':SUPA_KEY,'Authorization':'Bearer '+SUPA_KEY,'Content-Type':'application/json'},
+    body:JSON.stringify(body)});
+  if(!r.ok) throw new Error(await r.text());
+  return r.json();
+}
+function fmtDate(d){ const p=n=>String(n).padStart(2,'0');
+  return d.getFullYear()+'-'+p(d.getMonth()+1)+'-'+p(d.getDate()); }
+function getLunes(off){
+  const h=new Date(); const dia=(h.getDay()+6)%7;
+  const l=new Date(h); l.setDate(h.getDate()-dia+off*7); l.setHours(0,0,0,0); return l;
+}
+const fD=s=>s?new Date(s+'T12:00:00').toLocaleDateString('es-CL',{weekday:'short',day:'numeric',month:'short'}):'—';
+
+/* ═══ LOGIN ═══ */
+$('btnLogin').onclick=entrar;
+$('clave').addEventListener('keydown',e=>{ if(e.key==='Enter') entrar(); });
+async function entrar(){
+  const c=$('clave').value.trim();
+  if(!c) return;
+  $('loginErr').textContent='';
+  try{
+    const u=await rpc('smi_login',{p_clave:c});
+    if(!u || !u.length){ $('loginErr').textContent='Clave incorrecta.'; return; }
+    if(!u[0].puede_anestesia){ $('loginErr').textContent='Su usuario no tiene acceso a este panel.'; return; }
+    CLAVE=c; SESION=u[0].nombre; PUEDE_CORREGIR=!!u[0].puede_seguimiento;
+    $('who').textContent=SESION;
+    $('login').style.display='none'; $('app').style.display='block';
+    STAFF=await rpc('smi_anest_lista',{p_clave:CLAVE});
+    /* Domingo: la semana Lun–Sáb ya terminó; se parte en la siguiente para no abrir en vacío. */
+    if(new Date().getDay()===0) OFF=1;
+    cargar();
+  }catch(e){ $('loginErr').textContent='No se pudo entrar. Intente de nuevo.'; }
+}
+
+/* ═══ CARGA ═══ */
+$('btnRefresh').onclick=cargar;
+$('prev').onclick=()=>{ if(OFF<=0) return; OFF--; cargar(); };
+$('next').onclick=()=>{ OFF++; cargar(); };
+
+async function cargar(){
+  const l=getLunes(OFF), d=new Date(l); d.setDate(d.getDate()+6);
+  $('rng').textContent=l.toLocaleDateString('es-CL',{day:'numeric',month:'long'})+' — '+
+                       d.toLocaleDateString('es-CL',{day:'numeric',month:'long',year:'numeric'})+
+                       (OFF===0?' · desde hoy':'');
+  const bPrev=$('prev'); bPrev.disabled=(OFF<=0); bPrev.style.opacity=(OFF<=0)?'.4':''; bPrev.style.cursor=(OFF<=0)?'not-allowed':'';
+  try{
+    CASOS=await rpc('smi_anest_agenda',{p_clave:CLAVE,p_desde:fmtDate(l),p_hasta:fmtDate(d)});
+    /* Este panel organiza hacia adelante. Lo anterior se llevó a mano y ya no se reasigna. */
+    const hoyStr=fmtDate(new Date());
+    CASOS=(CASOS||[]).filter(c=>c.fecha>=hoyStr);
+    render();
+  }catch(e){ $('conSMI').innerHTML='<div class="empty">No se pudo cargar la agenda.</div>'; }
+}
+
+/* ═══ RENDER ═══ */
+function render(){
+  const con=CASOS.filter(c=>c.anest_smi);
+  const sin=CASOS.filter(c=>!c.anest_smi);
+  const hMin=a=>a.reduce((s,c)=>s+(c.duracion_cotizada_min||0),0);
+  const sumHon=a=>a.reduce((s,c)=>s+(+c.anest_monto||0),0);
+  const pisoDe=c=>(+c.anest_piso||0) || honorario(horasDe(c));
+  const sumPiso=a=>a.reduce((s,c)=>s+pisoDe(c),0);
+  const horasCon=hMin(con)/60, horasSin=hMin(sin)/60;
+  const potencial=sumPiso(sin);
+
+  $('kpis').innerHTML=
+    '<div class="kbox mine"><div class="lab">Con anestesista SMI</div>'
+    +'<div class="val">'+con.length+'</div>'
+    +'<div class="det">'+horasCon.toFixed(1)+' h de pabellón</div>'
+    +'<div class="money">'+clp(sumHon(con))+' en honorarios</div></div>'
+    +'<div class="kbox lost"><div class="lab">Con anestesista del cirujano</div>'
+    +'<div class="val">'+sin.length+'</div>'
+    +'<div class="det">'+horasSin.toFixed(1)+' h que su equipo no toma</div>'
+    +'<div class="money">'+clp(potencial)+' que <img class="iso" src="'+ISO+'" alt="SMI"> no factura</div></div>';
+
+  const sinAsig=con.filter(c=>!c.anestesista).length;
+  let h='<div class="stitle">Sus cirugías'+(con.length?'<span class="cnt">'+con.length+'</span>':'')+'</div>';
+  if(!con.length) h+='<div class="empty">Sin cirugías con anestesista SMI de aquí en adelante en esta semana.</div>';
+  else {
+    if(sinAsig) h+='<div class="alerta" style="margin-bottom:10px"><strong>'+sinAsig+' sin anestesista asignado.</strong></div>';
+    con.forEach(c=>{ h+=tarjeta(c,true); });
+  }
+  $('conSMI').innerHTML=h;
+
+  let g='<div class="stitle">Cirugías sin anestesista SMI'+(sin.length?'<span class="cnt">'+sin.length+'</span>':'')+'</div>';
+  if(!sin.length) g+='<div class="empty">Todas las cirugías de la semana son con anestesista SMI.</div>';
+  else {
+    g+='<div style="color:var(--muted);font-size:12.5px;margin-bottom:10px">'
+      +'El cirujano trae su propio anestesista.</div>';
+    sin.forEach(c=>{ g+=tarjeta(c,false); });
+  }
+  $('sinSMI').innerHTML=g;
+
+  renderGrilla();
+  const faltan=con.filter(x=>!x.anestesista && !yaOcurrio(x)).length;
+  const tg=document.querySelector('#tabs .tab[data-t="grilla"]');
+  if(tg) tg.innerHTML='Grilla semanal'+(faltan?'<span class="cnt2">'+faltan+'</span>':'');
+}
+
+function tarjeta(c, mia){
+  const dias=Math.ceil((new Date(c.fecha+'T12:00:00')-new Date())/86400000);
+  const urg = mia && !c.anestesista && dias<=2 && dias>=0 && !yaOcurrio(c);
+  let h='<div class="cx'+(urg?' urg':'')+'">';
+  h+='<div class="cx-top"><div>';
+  h+='<div class="cx-folio">'+esc(c.folio)+'</div>';
+  h+='<div class="cx-pac">'+esc(c.paciente||'—')+'</div>';
+  h+='<div class="cx-meta">'+esc(c.cirugia||'')+' · '+esc(c.cirujano||'')+'</div>';
+  h+='</div><div class="cx-when">';
+  h+='<div class="d">'+fD(c.fecha)+'</div>';
+  h+='<div style="color:var(--muted)">Pab '+c.pabellon+' · '+((c.duracion_cotizada_min||0)/60).toFixed(1)+' h</div>';
+  // El monto solo en las propias: el agregado de arriba ya dice lo otro.
+  if(mia) h+='<div class="cx-monto pos">'+clp(c.anest_monto)+'</div>';
+  h+='</div></div>';
+
+  h+=tags(c);
+
+  if(mia){
+    if(yaOcurrio(c)){
+      // La cirugía ya se realizó: quién dio la anestesia es un hecho, no una elección.
+      h+='<div class="cerrado">🔒 ';
+      if(c.anestesista) h+='<span class="n">'+esc(c.anestesista)+'</span><span class="c">· registrado</span>';
+      else h+='<span class="sinreg">Sin anestesista registrado</span>';
+      if(PUEDE_CORREGIR) h+='<button class="mini" style="margin-left:auto" onclick="corregir(\''+c.id+'\')">Corregir</button>';
+      h+='</div>';
+    } else {
+      h+='<div class="asig">';
+      h+='<select onchange="asignar(\''+c.id+'\',this.value,this)">';
+      h+='<option value="">— Sin asignar —</option>';
+      STAFF.forEach(n=>{ h+='<option value="'+esc(n)+'"'+(c.anestesista===n?' selected':'')+'>'+esc(n)+'</option>'; });
+      h+='</select>';
+      if(c.anestesista) h+='<span class="ok">✓ asignado</span>';
+      else if(dias>=0 && dias<=2) h+='<span class="warn">⚠ en '+(dias===0?'menos de 24 h':dias+' días')+'</span>';
+      h+='</div>';
+    }
+  } else if(c.ficha && c.ficha.anest_externo){
+    h+='<div class="cx-meta" style="margin-top:8px">Anestesista: <strong>'+esc(c.ficha.anest_externo)+'</strong></div>';
+  }
+  h+='</div>';
+  return h;
+}
+
+function tags(c){
+  const f=c.ficha;
+  let h='<div>';
+  if(!f || !f.completada){ h+='<span class="tag wa">⚠ Sin ficha prequirúrgica</span>'; }
+  else{
+    h+='<span class="tag no clic" onclick="verFicha(\''+c.id+'\')">Ver ficha</span>';
+    if(f.alergias===true) h+='<span class="tag al clic" onclick="verFicha(\''+c.id+'\')">⚠ ALERGIAS</span>';
+    if(f.medicacion===true) h+='<span class="tag wa clic" onclick="verFicha(\''+c.id+'\')">💊 Medicación</span>';
+    if(f.antecedentes) h+='<span class="tag al clic" onclick="verFicha(\''+c.id+'\')">🫀 Patología de base</span>';
+    if(f.edad) h+='<span class="tag no">'+f.edad+' años</span>';
+    if(f.modalidad==='hospitalizacion') h+='<span class="tag in">Hospitalizada</span>';
+    if(f.hora_solicitada) h+='<span class="tag no">🕐 pide '+String(f.hora_solicitada).slice(0,5)+'</span>';
+  }
+  h+='</div>';
+  return h;
+}
+
+
+
+/* ═══ GRILLA DÍA × PABELLÓN ═══ */
+const DIAS_C=['Dom','Lun','Mar','Mié','Jue','Vie','Sáb'];
+
+function renderGrilla(){
+  const lunes=getLunes(OFF);
+  const hoyStr=fmtDate(new Date());
+  let h='<div class="wg">';
+  h+='<div class="wg-corner"></div>';
+  h+='<div class="wg-ph p1">Pabellón 1</div>';
+  h+='<div class="wg-ph p2">Pabellón 2</div>';
+  h+='<div class="wg-ph p3">Pabellón 3</div>';
+
+  for(let i=0;i<6;i++){
+    const dia=new Date(lunes); dia.setDate(dia.getDate()+i);
+    const dStr=fmtDate(dia);
+    h+='<div class="wg-day'+(dStr===hoyStr?' today':'')+'">'+DIAS_C[dia.getDay()]+'<br>'+dia.getDate()+'</div>';
+    for(let p=1;p<=3;p++){
+      h+='<div class="wg-cell">';
+      CASOS.filter(c=>c.fecha===dStr && +c.pabellon===p).forEach(c=>{ h+=bloque(c); });
+      h+='</div>';
+    }
+  }
+  h+='</div>';
+  $('grilla').innerHTML=h;
+}
+
+function bloque(c){
+  const mia=!!c.anest_smi;
+  const hecho=yaOcurrio(c);
+  const falta=mia && !c.anestesista && !hecho;
+  let h='<div class="blk'+(mia?' smi':'')+(falta?' falta':'')+(hecho?' hecho':'')+'">';
+  h+='<div class="f">'+esc(c.folio)+'</div>';
+  h+='<div class="p">'+esc(c.paciente||'—')+'</div>';
+  h+='<div class="m">'+esc(c.cirugia||'')+'</div>';
+  h+='<div class="m">'+esc(c.cirujano||'')+' · '+((c.duracion_cotizada_min||0)/60).toFixed(1)+' h</div>';
+  h+=tags(c);
+
+  if(mia){
+    if(hecho){
+      h+='<div class="lock">🔒 '+(c.anestesista?('<b>'+esc(c.anestesista)+'</b>'):'<span style="color:var(--neg)">sin registrar</span>')+'</div>';
+    } else {
+      /* La herramienta de asignación vive solo en las anestesias de SMI. */
+      h+='<select onchange="asignar(\''+c.id+'\',this.value,this)">';
+      h+='<option value="">— Asignar anestesista —</option>';
+      STAFF.forEach(n=>{ h+='<option value="'+esc(n)+'"'+(c.anestesista===n?' selected':'')+'>'+esc(n)+'</option>'; });
+      h+='</select>';
+    }
+  } else {
+    const ext=(c.ficha && c.ficha.anest_externo) ? c.ficha.anest_externo : 'del cirujano';
+    h+='<div class="ext">Anestesista '+esc(ext)+'</div>';
+  }
+  h+='</div>';
+  return h;
+}
+
+/* ═══ CEJAS ═══ */
+document.getElementById('tabs').addEventListener('click',e=>{
+  const t=e.target.closest('.tab'); if(!t) return;
+  document.querySelectorAll('#tabs .tab').forEach(x=>x.classList.remove('on'));
+  document.querySelectorAll('.panel').forEach(x=>x.classList.remove('on'));
+  t.classList.add('on');
+  document.getElementById('p-'+t.dataset.t).classList.add('on');
+});
+
+/* Una cirugía ya ocurrida no se reasigna: quién estuvo es un hecho. */
+function yaOcurrio(c){
+  if(c.hora_inicio_real) return true;
+  if(['en_cirugia','en_recuperacion','finalizada'].includes(c.estado)) return true;
+  const hoy=new Date(); hoy.setHours(0,0,0,0);
+  return new Date(c.fecha+'T12:00:00') < hoy;
+}
+
+function corregir(casoId){
+  const c=CASOS.find(x=>x.id===casoId); if(!c) return;
+  let h='<h3>Corregir asignación</h3>';
+  h+='<div class="sub">'+esc(c.folio)+' · '+esc(c.paciente||'')+' · '+fD(c.fecha)+'</div>';
+  h+='<div class="alerta wa" style="margin-top:13px">Esta cirugía ya se realizó. Corrija solo si el registro '
+   + 'no coincide con quién dio la anestesia. La corrección queda en la bitácora con su nombre y el motivo.</div>';
+  h+='<div class="msec"><div class="t">Registrado hoy</div><div style="font-size:14px;font-weight:600">'
+   + (c.anestesista?esc(c.anestesista):'<span style="color:var(--neg)">Sin anestesista registrado</span>')+'</div></div>';
+  h+='<div class="msec"><div class="t">Quién estuvo realmente</div>';
+  h+='<select id="cgNombre" style="width:100%;border:1px solid var(--line);border-radius:8px;padding:9px;font-family:var(--sans);font-size:14px">';
+  h+='<option value="">Seleccione…</option>';
+  STAFF.forEach(n=>{ h+='<option value="'+esc(n)+'"'+(c.anestesista===n?' selected':'')+'>'+esc(n)+'</option>'; });
+  h+='</select>';
+  h+='<input type="text" id="cgMotivo" placeholder="Motivo de la corrección (obligatorio)" style="width:100%;margin-top:9px;border:1px solid var(--line);border-radius:8px;padding:9px;font-family:var(--sans);font-size:14px">';
+  h+='</div>';
+  h+='<div style="margin-top:15px;display:flex;gap:8px"><button class="btn" onclick="guardarCorreccion(\''+casoId+'\')">Guardar corrección</button>'
+   + '<button class="btn" onclick="cerrar()">Cancelar</button></div>';
+  h+='<div id="cgMsg" style="font-size:12.5px;margin-top:9px"></div>';
+  $('mbox').innerHTML=h; $('modal').classList.add('on');
+}
+
+async function guardarCorreccion(casoId){
+  const n=$('cgNombre').value, m=$('cgMotivo').value.trim();
+  const msg=$('cgMsg');
+  if(!n){ msg.style.color='var(--neg)'; msg.textContent='Seleccione al anestesista.'; return; }
+  if(!m){ msg.style.color='var(--neg)'; msg.textContent='El motivo es obligatorio.'; return; }
+  try{
+    await rpc('smi_anest_corregir',{p_clave:CLAVE,p_caso_id:casoId,p_nombre:n,p_motivo:m});
+    const c=CASOS.find(x=>x.id===casoId); if(c) c.anestesista=n;
+    msg.style.color='var(--pos)'; msg.textContent='Corrección guardada.';
+    setTimeout(()=>{ cerrar(); render(); }, 700);
+  }catch(e){
+    msg.style.color='var(--neg)';
+    let t='No se pudo guardar.';
+    try{ const j=JSON.parse(e.message); if(j&&j.message) t=j.message; }catch(_){}
+    msg.textContent=t;
+  }
+}
+
+/* ═══ ASIGNAR ═══ */
+async function asignar(casoId, nombre, sel){
+  sel.disabled=true;
+  try{
+    await rpc('smi_anest_asignar',{p_clave:CLAVE,p_caso_id:casoId,p_nombre:nombre||null});
+    const c=CASOS.find(x=>x.id===casoId);
+    if(c) c.anestesista=nombre||null;
+    render();
+  }catch(e){
+    let t='No se pudo asignar.';
+    try{ const j=JSON.parse(e.message); if(j&&j.message) t=j.message; }catch(_){}
+    alert(t); sel.disabled=false;
+  }
+}
+
+/* ═══ FICHA ═══ */
+function verFicha(casoId){
+  const c=CASOS.find(x=>x.id===casoId); if(!c || !c.ficha) return;
+  const f=c.ficha;
+  let h='<h3>'+esc(c.paciente||'—')+'</h3>';
+  h+='<div class="sub">'+esc(c.cirugia||'')+' · '+esc(c.cirujano||'')+'</div>';
+
+  let al='';
+  if(f.alergias===true) al+='<div class="alerta"><strong>ALERGIAS:</strong> '+esc(f.alergias_detalle||'sin detalle')+'</div>';
+  if(f.medicacion===true) al+='<div class="alerta wa"><strong>Medicación habitual:</strong> '+esc(f.medicacion_detalle||'sin detalle')+'</div>';
+  if(al) h+='<div style="margin-top:13px">'+al+'</div>';
+
+  h+='<div class="mrow">'
+   + kv('Edad', f.edad?f.edad+' años':'—')
+   + kv('Modalidad', f.modalidad==='hospitalizacion'?'Con hospitalización':(f.modalidad==='ambulatoria'?'Ambulatoria':'—'))
+   + kv('Fecha', fD(c.fecha)) + kv('Pabellón', 'Pabellón '+c.pabellon)
+   + kv('Duración cotizada', ((c.duracion_cotizada_min||0)/60).toFixed(1)+' h')
+   + kv('Hora solicitada', f.hora_solicitada?String(f.hora_solicitada).slice(0,5):'—')
+   + '</div>';
+
+  if(f.antecedentes) h+='<div class="msec"><div class="t">Antecedentes mórbidos</div><div style="font-size:13.5px">'+esc(f.antecedentes)+'</div></div>';
+
+  h+='<div style="margin-top:16px"><button class="btn" onclick="cerrar()">Cerrar</button></div>';
+  $('mbox').innerHTML=h; $('modal').classList.add('on');
+}
+function kv(l,v){ return '<div><div class="l">'+l+'</div><div class="v">'+esc(v||'—')+'</div></div>'; }
+function cerrar(){ $('modal').classList.remove('on'); }
+$('modal').addEventListener('click',e=>{ if(e.target.id==='modal') cerrar(); });
+
+$('isoHdr').src=ISO; $('isoLogin').src=ISO;
+
+/* Recarga al despertar */
+document.addEventListener('visibilitychange',()=>{ if(!document.hidden && CLAVE) cargar(); });
+</script>
+</body>
+</html>
