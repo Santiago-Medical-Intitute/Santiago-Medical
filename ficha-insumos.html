@@ -1,0 +1,279 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Ficha de Insumos · SMI</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:wght@500;600;700&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+:root{
+  --crimson:#CD1D52; --deep:#B22030; --bright:#E33C3B;
+  --ink:#1C1719; --muted:#857479; --faint:#A99CA0;
+  --bg:#FAF7F6; --card:#FFFFFF; --line:#ECE0E2; --tint:#F7F0F1;
+  --pos:#1E7A4D; --neg:#C0202F; --warn:#B7791F; --info:#3B6FB3;
+  --serif:'Cormorant Garamond',Georgia,serif; --sans:'Inter',system-ui,sans-serif;
+}
+*{box-sizing:border-box}
+body{margin:0;background:var(--bg);color:var(--ink);font-family:var(--sans);font-size:14px;line-height:1.5;-webkit-font-smoothing:antialiased}
+.wrap{max-width:1000px;margin:0 auto;padding:20px 16px 64px}
+#gate{max-width:380px;margin:12vh auto 0;background:var(--card);border:1px solid var(--line);border-radius:18px;padding:30px 26px;text-align:center;box-shadow:0 12px 40px -22px rgba(28,23,25,.4)}
+#gate h2{font-family:var(--serif);font-weight:600;font-size:24px;margin:0 0 4px}
+#gate p{color:var(--muted);font-size:13px;margin:0 0 18px}
+#gate input{width:100%;padding:13px 14px;border:1px solid var(--line);border-radius:11px;font-family:var(--sans);font-size:15px;text-align:center;letter-spacing:.04em}
+#gate input:focus{outline:none;border-color:var(--crimson)}
+#gate button{width:100%;margin-top:12px;border:0;border-radius:11px;padding:13px;font-family:var(--sans);font-size:15px;font-weight:600;color:#fff;background:linear-gradient(120deg,var(--deep),var(--crimson));cursor:pointer}
+#gateMsg{color:var(--neg);font-size:13px;margin-top:10px;min-height:18px}
+#app{display:none}
+.hdr{display:flex;align-items:flex-end;justify-content:space-between;padding-bottom:14px;margin-bottom:16px;border-bottom:1px solid var(--line);flex-wrap:wrap;gap:12px}
+.hdr h1{font-family:var(--serif);font-weight:600;font-size:28px;margin:0}
+.hdr .sub{font-size:13px;color:var(--muted);margin-top:2px}
+.hdr-right{display:flex;align-items:center;gap:10px}
+.who{font-size:12px;color:var(--muted)}
+.mk-wrap{display:flex;align-items:center;gap:6px}
+.mk-lbl{font-size:11.5px;color:var(--muted);font-weight:600}
+.mk-btn{border:1px solid var(--line);background:var(--card);border-radius:8px;padding:6px 11px;font-size:12.5px;font-weight:700;cursor:pointer;color:var(--muted);font-family:var(--sans)}
+.mk-btn.on{background:var(--ink);color:#fff;border-color:var(--ink)}
+.selbar{display:flex;flex-wrap:wrap;gap:12px;align-items:flex-end;margin-bottom:18px}
+.selbar .fld{display:flex;flex-direction:column;gap:3px}
+.selbar label{font-size:11px;color:var(--muted);font-weight:600}
+.selbar select{border:1px solid var(--line);border-radius:10px;padding:10px 12px;font-family:var(--sans);font-size:14px;background:var(--card);color:var(--ink);min-width:240px}
+.selbar select:focus{outline:none;border-color:var(--crimson)}
+
+.ficha{background:var(--card);border:1px solid var(--line);border-radius:16px;overflow:hidden}
+.f-head{background:linear-gradient(120deg,var(--deep),var(--crimson));color:#fff;padding:15px 20px}
+.f-head .t{font-family:var(--serif);font-size:22px;font-weight:700;line-height:1.1}
+.f-head .s{font-size:12.5px;opacity:.9;margin-top:2px}
+.f-body{padding:16px 20px}
+.extra-search{position:relative;margin-bottom:14px}
+.extra-search input{width:100%;border:1px solid var(--line);border-radius:10px;padding:11px 13px;font-family:var(--sans);font-size:14px}
+.extra-search input:focus{outline:none;border-color:var(--crimson)}
+.extra-results{display:none;position:absolute;left:0;right:0;top:calc(100% + 3px);background:var(--card);border:1px solid var(--line);border-radius:10px;box-shadow:0 10px 30px -12px rgba(0,0,0,.3);max-height:260px;overflow-y:auto;z-index:20}
+.extra-results.show{display:block}
+.extra-opt{display:flex;justify-content:space-between;align-items:center;gap:8px;padding:9px 12px;cursor:pointer;border-bottom:1px solid var(--line)}
+.extra-opt:hover{background:var(--tint)}
+.eo-name{font-weight:600;font-size:12.5px} .eo-cat{font-size:10.5px;color:var(--muted)}
+table.it{width:100%;border-collapse:collapse;font-size:13px}
+table.it th{text-align:left;color:var(--muted);font-weight:600;font-size:10.5px;text-transform:uppercase;letter-spacing:.03em;padding:7px 6px;border-bottom:1px solid var(--line)}
+table.it td{padding:8px 6px;border-bottom:1px solid var(--line);vertical-align:middle}
+table.it td.r{text-align:right;font-variant-numeric:tabular-nums}
+.qin{width:64px;border:1px solid var(--line);border-radius:8px;padding:6px 8px;font-family:var(--sans);font-size:13px;text-align:center}
+.qin:focus{outline:none;border-color:var(--crimson)}
+.del{color:var(--neg);font-weight:700;cursor:pointer;padding:0 6px;font-size:16px}
+.empty{color:var(--muted);text-align:center;padding:24px}
+.totrow{display:flex;justify-content:flex-end;gap:26px;margin-top:14px;padding-top:14px;border-top:2px solid var(--line);flex-wrap:wrap}
+.tot{text-align:right}
+.tot .l{font-size:10.5px;text-transform:uppercase;letter-spacing:.05em;color:var(--muted);font-weight:600}
+.tot .v{font-family:var(--serif);font-size:26px;font-weight:700;line-height:1.1}
+.tot .v.aran{color:var(--pos)}
+.trace{font-size:11px;color:var(--faint);margin-top:10px}
+
+.hint{background:var(--card);border:1px dashed var(--line);border-radius:14px;padding:24px;text-align:center;color:var(--muted)}
+.fichas-t{font-family:var(--serif);font-weight:700;font-size:18px;margin:22px 0 10px}
+.fcard{background:var(--card);border:1px solid var(--line);border-radius:12px;padding:11px 15px;margin-bottom:8px;cursor:pointer;display:flex;justify-content:space-between;align-items:center;gap:12px}
+.fcard:hover{border-color:var(--crimson)}
+.fcard .nm{font-weight:600}
+.fcard .mt{font-size:12px;color:var(--muted)}
+.fcard .rr{text-align:right;font-size:12px}
+.fcard .rr b{font-family:var(--serif);font-size:17px}
+.foot{margin-top:26px;text-align:center;color:var(--faint);font-size:12px}
+.btn-print{border:1px solid var(--info);background:#EEF4FB;color:var(--info);border-radius:10px;padding:10px 15px;font-family:var(--sans);font-size:13px;font-weight:700;cursor:pointer;margin-top:14px}
+/* ── checklist imprimible ── */
+#printArea{display:none}
+.pc-break{page-break-after:always;height:0}
+.pc{padding:8px 4px;color:#000}
+.pc-t{font-family:var(--serif);font-size:22px;font-weight:700}
+.pc-tag{display:inline-block;font-size:11px;font-weight:700;border:1px solid #000;border-radius:12px;padding:1px 10px;margin-bottom:6px}
+.pc-s{font-size:13px;margin-top:2px}
+.pc-s2{font-size:12.5px;margin-top:10px}
+.pc-tbl{width:100%;border-collapse:collapse;margin-top:10px;font-size:13px}
+.pc-tbl th{text-align:left;border-bottom:2px solid #000;padding:6px 4px;font-size:10.5px;text-transform:uppercase}
+.pc-tbl td{padding:8px 4px;border-bottom:1px solid #bbb}
+.pc-box{display:inline-block;width:14px;height:14px;border:1.5px solid #000;border-radius:2px}
+.pc-f{margin-top:18px;font-size:12.5px}
+@media print{
+  body>*{display:none !important}
+  #printArea{display:block !important}
+  @page{margin:14mm}
+}
+</style>
+</head>
+<body>
+
+<div id="gate">
+  <h2>Ficha de Insumos</h2>
+  <p>Operaciones · Ingrese su clave</p>
+  <input type="password" id="clave" placeholder="Clave" autocomplete="off">
+  <button id="entrar">Ingresar</button>
+  <div id="gateMsg"></div>
+</div>
+
+<div id="app" class="wrap">
+  <div class="hdr">
+    <div>
+      <h1>Ficha de Insumos</h1>
+      <div class="sub">Armado de insumos por cirujano y cirugía · costo real de bodega → arancel</div>
+    </div>
+    <div class="hdr-right">
+      <span class="who" id="whoTxt"></span>
+      <span class="mk-wrap"><span class="mk-lbl">Markup:</span>
+        <button class="mk-btn on" data-mk="2.5" onclick="setMarkup(2.5)">2,5×</button>
+        <button class="mk-btn" data-mk="2.3" onclick="setMarkup(2.3)">2,3×</button></span>
+    </div>
+  </div>
+
+  <div class="selbar">
+    <div class="fld"><label>Cirujano</label><select id="selCir" onchange="elegir()"><option value="">— Elige —</option></select></div>
+    <div class="fld"><label>Cirugía</label><select id="selCx" onchange="elegir()"><option value="">— Elige —</option></select></div>
+  </div>
+
+  <div id="main"></div>
+
+  <div class="foot">Ficha de Insumos · SMI · Costo de bodega (Medilink) · Arancel = costo × markup · Trazabilidad completa</div>
+</div>
+
+<div id="printArea"></div>
+
+<script>
+const SUPA_URL='https://rhpguniznuhljiigwetq.supabase.co';
+const SUPA_KEY='sb_publishable_lVaI9a2wWFa0PSL3edPiRA_cVMlXDwG';
+const $=id=>document.getElementById(id);
+let CLAVE='', SESION='', CAT={cirujanos:[],cirugias:[],fichas:[]}, FICHA=null, MARKUP=2.5;
+let CIR='', CX='';
+
+const clp=n=>'$'+Math.round(+n||0).toLocaleString('es-CL');
+const esc=s=>(s||'').replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
+
+async function rpc(fn,body){
+  const r=await fetch(SUPA_URL+'/rest/v1/rpc/'+fn,{method:'POST',
+    headers:{'apikey':SUPA_KEY,'Authorization':'Bearer '+SUPA_KEY,'Content-Type':'application/json'},
+    body:JSON.stringify(body)});
+  if(!r.ok) throw new Error(await r.text());
+  return r.json();
+}
+
+$('entrar').onclick=entrar;
+$('clave').addEventListener('keydown',e=>{if(e.key==='Enter')entrar();});
+async function entrar(){
+  const c=$('clave').value.trim(); if(!c) return;
+  $('gateMsg').textContent='Verificando…';
+  try{
+    const u=await rpc('smi_login',{p_clave:c});
+    const usr=Array.isArray(u)?u[0]:u;
+    if(!usr || !(usr.puede_operaciones || usr.puede_director)){ $('gateMsg').textContent='Su clave no tiene acceso a este panel.'; return; }
+    CLAVE=c; SESION=usr.nombre; $('whoTxt').textContent=SESION;
+    $('gate').style.display='none'; $('app').style.display='block';
+    await cargarCat();
+  }catch(e){ $('gateMsg').textContent='Error de conexión.'; }
+}
+
+async function cargarCat(){
+  try{ CAT=await rpc('smi_ficha_catalogos',{p_clave:CLAVE}); }catch(e){ CAT={cirujanos:[],cirugias:[],fichas:[]}; }
+  $('selCir').innerHTML='<option value="">— Elige —</option>'+(CAT.cirujanos||[]).map(c=>'<option value="'+esc(c.id)+'">'+esc(c.nombre)+'</option>').join('');
+  $('selCx').innerHTML='<option value="">— Elige —</option>'+(CAT.cirugias||[]).map(c=>'<option value="'+esc(c.id)+'">'+esc(c.nombre)+'</option>').join('');
+  renderMain();
+}
+function nombreCir(id){ const c=(CAT.cirujanos||[]).find(x=>x.id===id); return c?c.nombre:id; }
+function nombreCx(id){ const c=(CAT.cirugias||[]).find(x=>x.id===id); return c?c.nombre:id; }
+
+async function elegir(){
+  CIR=$('selCir').value; CX=$('selCx').value;
+  if(CIR && CX){ try{ FICHA=await rpc('smi_ficha_ver',{p_clave:CLAVE,p_cirujano_id:CIR,p_cirugia_id:CX}); }catch(e){ FICHA=null; } }
+  else FICHA=null;
+  renderMain();
+}
+window.abrirFicha=function(cir,cx){ $('selCir').value=cir; $('selCx').value=cx; elegir(); window.scrollTo(0,0); };
+
+function renderMain(){
+  if(!(CIR && CX)){
+    let h='<div class="hint">Elige un <b>cirujano</b> y una <b>cirugía</b> arriba para ver o armar su ficha de insumos.</div>';
+    if((CAT.fichas||[]).length){
+      h+='<div class="fichas-t">Fichas existentes <span style="color:var(--muted);font-weight:400;font-size:14px">· '+CAT.fichas.length+'</span></div>';
+      CAT.fichas.slice().sort((a,b)=>b.costo-a.costo).forEach(f=>{
+        h+='<div class="fcard" onclick="abrirFicha(\''+esc(f.cirujano_id)+'\',\''+esc(f.cirugia_id)+'\')">'
+          +'<div><div class="nm">'+esc(nombreCir(f.cirujano_id))+'</div><div class="mt">'+esc(nombreCx(f.cirugia_id))+' · '+f.n+' insumo'+(f.n!==1?'s':'')+'</div></div>'
+          +'<div class="rr"><div class="mt">arancel ×'+MARKUP.toString().replace('.',',')+'</div><b>'+clp(f.costo*MARKUP)+'</b></div></div>';
+      });
+    }
+    $('main').innerHTML=h; return;
+  }
+  const items=(FICHA&&FICHA.items)||[];
+  const costo=(FICHA&&+FICHA.costo_total)||0;
+  const arancel=costo*MARKUP;
+  let h='<div class="ficha"><div class="f-head"><div class="t">'+esc(nombreCx(CX))+'</div><div class="s">'+esc(nombreCir(CIR))+' · ficha de insumos</div></div><div class="f-body">'
+    +'<div class="extra-search"><input type="text" id="buscar" placeholder="Buscar insumo de bodega (primeras letras)…" oninput="buscarInsumo(this.value)" onfocus="buscarInsumo(this.value)" autocomplete="off" autocapitalize="off" spellcheck="false"><div class="extra-results" id="results"></div></div>';
+  if(items.length){
+    h+='<table class="it"><tr><th>Insumo</th><th class="r">Costo unit.</th><th class="r">Cantidad</th><th class="r">Subtotal</th><th></th></tr>';
+    items.forEach(i=>{
+      h+='<tr><td>'+esc(i.nombre)+'</td>'
+        +'<td class="r">'+clp(i.costo_unitario)+'</td>'
+        +'<td class="r"><input class="qin" type="number" min="0" step="1" value="'+(+i.cantidad)+'" onchange="cambiarCant('+i.id+',this.value)"></td>'
+        +'<td class="r"><b>'+clp(i.subtotal)+'</b></td>'
+        +'<td class="r"><span class="del" onclick="quitar('+i.id+')" title="Quitar">×</span></td></tr>';
+    });
+    h+='</table>';
+  } else h+='<div class="empty">Sin insumos aún. Busca arriba y agrégalos.</div>';
+  h+='<div class="totrow"><div class="tot"><div class="l">Costo total</div><div class="v">'+clp(costo)+'</div></div>'
+    +'<div class="tot"><div class="l">Arancel (×'+MARKUP.toString().replace('.',',')+')</div><div class="v aran">'+clp(arancel)+'</div></div></div>';
+  h+='<div class="trace">Costo real de bodega (Medilink). El arancel se usa como precio de lista de insumos de esta cirugía para este cirujano.</div>';
+  if(items.length) h+='<div><button class="btn-print" onclick="printChecklist()">🖨️ Descargar checklist (2 copias, sin valores)</button></div>';
+  h+='</div></div>';
+  $('main').innerHTML=h;
+}
+
+/* checklist imprimible en 2 copias, sin valores */
+function copiaChecklist(etiqueta){
+  const items=(FICHA&&FICHA.items)||[];
+  let h='<div class="pc"><div class="pc-tag">'+etiqueta+'</div>'
+    +'<div class="pc-t">'+esc(nombreCx(CX))+'</div>'
+    +'<div class="pc-s">'+esc(nombreCir(CIR))+' · Checklist de armado de insumos</div>'
+    +'<div class="pc-s2">Fecha: ____/____/______     ·     Paciente / folio: ______________________</div>'
+    +'<table class="pc-tbl"><tr><th style="width:34px">✓</th><th>Insumo</th><th style="width:60px;text-align:center">Cant.</th></tr>';
+  items.forEach(i=>{ h+='<tr><td style="text-align:center"><span class="pc-box"></span></td><td>'+esc(i.nombre)+'</td><td style="text-align:center;font-weight:700">'+(+i.cantidad)+'</td></tr>'; });
+  h+='</table><div class="pc-f">Armó: ____________________     Verificó: ____________________     <b>Caja completa <span class="pc-box"></span></b></div></div>';
+  return h;
+}
+function printChecklist(){
+  const items=(FICHA&&FICHA.items)||[];
+  if(!items.length){ alert('La ficha no tiene insumos.'); return; }
+  $('printArea').innerHTML = copiaChecklist('Copia 1 — acompaña la caja') + '<div class="pc-break"></div>' + copiaChecklist('Copia 2 — verificación en pabellón');
+  window.print();
+}
+
+/* búsqueda de insumos */
+let stO=null, RES=[];
+function buscarInsumo(q){
+  q=(q||'').trim(); const box=$('results'); if(!box) return;
+  if(q.length<2){ box.classList.remove('show'); box.innerHTML=''; return; }
+  clearTimeout(stO);
+  stO=setTimeout(async()=>{
+    try{
+      const d=await rpc('smi_ficha_buscar_insumo',{p_clave:CLAVE,p_q:q});
+      RES=Array.isArray(d)?d:[];
+      box.innerHTML = RES.length ? RES.map((it,i)=>'<div class="extra-opt" onmousedown="event.preventDefault();addIns('+i+')"><div><span class="eo-name">'+esc(it.nombre)+'</span><br><span class="eo-cat">costo '+clp(it.costo_unitario)+(it.codigo&&it.codigo!=='-'?' · '+esc(it.codigo):'')+'</span></div><span style="color:var(--pos);font-weight:700;font-size:19px">＋</span></div>').join('')
+        : '<div class="extra-opt"><span style="color:var(--muted)">Sin resultados</span></div>';
+      box.classList.add('show');
+    }catch(e){ console.error(e); }
+  },300);
+}
+async function addIns(i){
+  const it=RES[i]; if(!it) return;
+  try{ await rpc('smi_ficha_agregar_item',{p_clave:CLAVE,p_cirujano_id:CIR,p_cirugia_id:CX,
+    p_producto:it.producto,p_codigo:it.codigo,p_nombre:it.nombre,p_cantidad:1,p_costo_unitario:it.costo_unitario});
+    $('buscar').value=''; $('results').classList.remove('show'); await elegir(); }
+  catch(e){ alert('Error: '+e.message); }
+}
+async function cambiarCant(id,val){
+  try{ await rpc('smi_ficha_item_cantidad',{p_clave:CLAVE,p_item_id:id,p_cantidad:+val||0}); await elegir(); }
+  catch(e){ alert('Error: '+e.message); }
+}
+async function quitar(id){
+  if(!confirm('¿Quitar este insumo de la ficha?')) return;
+  try{ await rpc('smi_ficha_quitar_item',{p_clave:CLAVE,p_item_id:id}); await elegir(); }
+  catch(e){ alert('Error: '+e.message); }
+}
+window.setMarkup=function(m){ MARKUP=+m; document.querySelectorAll('.mk-btn').forEach(b=>b.classList.toggle('on',+b.dataset.mk===MARKUP)); renderMain(); };
+document.addEventListener('click',e=>{ if(!e.target.closest('.extra-search')){ const r=$('results'); if(r) r.classList.remove('show'); } });
+</script>
+</body>
+</html>
