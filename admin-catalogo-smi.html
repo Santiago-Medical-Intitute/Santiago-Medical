@@ -70,6 +70,7 @@ td input[type=number]{text-align:right}
     <div class="tab" data-t="cirugias">Cirugías</div>
     <div class="tab" data-t="convenios">Convenios</div>
     <div class="tab" data-t="combinables">Combinables</div>
+    <div class="tab" data-t="anestesistas">Anestesistas</div>
   </div>
 
   <div id="panel"></div>
@@ -80,7 +81,7 @@ td input[type=number]{text-align:right}
 const SUPA_URL='https://rhpguniznuhljiigwetq.supabase.co';
 const SUPA_KEY='sb_publishable_lVaI9a2wWFa0PSL3edPiRA_cVMlXDwG';
 const $=id=>document.getElementById(id);
-let CLAVE='', QUIEN='', CAT={cirujanos:[],cirugias:[],convenios:[],combinables:[]}, TAB='cirujanos';
+let CLAVE='', QUIEN='', CAT={cirujanos:[],cirugias:[],convenios:[],combinables:[],anestesistas:[]}, TAB='cirujanos';
 const clp=n=>Math.round(+n||0).toLocaleString('es-CL');
 function fmtMiles(n){ n=Math.round(+n||0); return n.toLocaleString('es-CL'); }
 function desMiles(s){ return Math.round(+(String(s).replace(/[^\d]/g,''))||0); }
@@ -128,6 +129,8 @@ async function cargar(){
     try{ CAT.combinables=await rpc('smi_combinables_listar',{}); }
     catch(e){ CAT.combinables=[]; }
   }
+  try{ CAT.anestesistas=await rpc('smi_anestesistas_listar',{p_clave:CLAVE}); }
+  catch(e){ CAT.anestesistas=[]; }
   render();
   $('lastUpdate').textContent='Actualizado '+new Date().toLocaleTimeString('es-CL',{hour:'2-digit',minute:'2-digit'});
 }
@@ -136,7 +139,7 @@ document.querySelectorAll('.tab').forEach(t=>t.onclick=()=>{
   TAB=t.dataset.t; document.querySelectorAll('.tab').forEach(x=>x.classList.toggle('on',x===t)); render();
 });
 
-function render(){ ({cirujanos:renderCirujanos,cirugias:renderCirugias,convenios:renderConvenios,combinables:renderCombinables}[TAB])(); }
+function render(){ ({cirujanos:renderCirujanos,cirugias:renderCirugias,convenios:renderConvenios,combinables:renderCombinables,anestesistas:renderAnestesistas}[TAB])(); }
 
 // ---------- CIRUJANOS ----------
 function renderCirujanos(){
@@ -167,6 +170,42 @@ window.nuevoCirujano=async()=>{
   const id=slug(nombre); if(!id){alert('Nombre inválido');return;}
   try{ await rpc('smi_guardar_cirujano',{p_clave:CLAVE,p_id:id,p_nombre:nombre,p_dcto_acuerdo:0.12,p_dcto_insumos:0,p_especialidad:'Plástica',p_activo:true});
     toast('Cirujano creado'); await cargar(); }catch(e){ alert(e.message); }
+};
+
+// ---------- ANESTESISTAS ----------
+function renderAnestesistas(){
+  const list=CAT.anestesistas||[];
+  const nAcr=list.filter(a=>a.acreditado).length;
+  const rows=list.map(a=>`<tr data-id="${a.id}">
+    <td><input value="${(a.nombre||'').replace(/"/g,'&quot;')}" data-f="nombre" style="min-width:170px"></td>
+    <td><input value="${(a.rut||'').replace(/"/g,'&quot;')}" data-f="rut" style="width:110px"></td>
+    <td><input value="${(a.cirujanos||'').replace(/"/g,'&quot;')}" data-f="cirujanos" style="min-width:150px"></td>
+    <td style="text-align:center"><input type="checkbox" data-f="acreditado" ${a.acreditado?'checked':''}></td>
+    <td style="text-align:center"><input type="checkbox" data-f="activo" ${a.activo!==false?'checked':''}></td>
+    <td><button class="save" onclick="guardarAnestesista('${a.id}',this)">✓</button></td>
+  </tr>`).join('');
+  $('panel').innerHTML=`
+    <div class="bar"><input type="text" id="q" placeholder="Filtrar anestesistas…" oninput="filtrar()">
+      <span class="hint" style="margin:0 10px">${nAcr} acreditados · ${list.length} total</span>
+      <button class="btn" onclick="nuevoAnestesista()">+ Nuevo anestesista</button></div>
+    <p class="hint">Marca/desmarca "Acred." y guarda con ✓. "Equipo" = cirujano con quien trabaja (o SMI). El cruce con las fichas preQ es por nombre y tolera el formato.</p>
+    <table><thead><tr><th>Nombre</th><th>RUT</th><th>Equipo / Cirujano</th><th>Acred.</th><th>Activo</th><th></th></tr></thead><tbody>${rows}</tbody></table>`;
+}
+window.guardarAnestesista=async(id,btn)=>{
+  const tr=btn.closest('tr'); const g=f=>tr.querySelector(`[data-f="${f}"]`);
+  try{
+    await rpc('smi_anestesista_guardar',{p_clave:CLAVE,p_id:id,p_nombre:g('nombre').value,
+      p_rut:g('rut').value,p_cirujanos:g('cirujanos').value,
+      p_acreditado:g('acreditado').checked,p_activo:g('activo').checked});
+    toast('Anestesista guardado'); await cargar();
+  }catch(e){ alert('No se pudo guardar: '+(e.message||e)); }
+};
+window.nuevoAnestesista=async()=>{
+  const nombre=prompt('Nombre del anestesista:'); if(!nombre)return;
+  const rut=prompt('RUT (opcional):')||'';
+  const eq=prompt('Equipo/cirujano (opcional, ej. SMI o DR. FERES):')||'';
+  try{ await rpc('smi_anestesista_guardar',{p_clave:CLAVE,p_id:null,p_nombre:nombre,p_rut:rut,p_cirujanos:eq,p_acreditado:true,p_activo:true});
+    toast('Anestesista agregado'); await cargar(); }catch(e){ alert(e.message||e); }
 };
 
 // ---------- CIRUGIAS ----------
