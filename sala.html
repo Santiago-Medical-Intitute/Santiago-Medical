@@ -397,7 +397,7 @@ function casoHTML(c){
     h+='<div class="clock-sub" id="clockSub-'+c.id+'"></div>';
     h+='<div class="excess-bar" id="excess-'+c.id+'"><div class="ex-label">Tiempo excedido</div><div class="ex-time" id="exTime-'+c.id+'">0 min</div></div>';
     h+=incisionHTML(c);
-    h+='<div class="clock-btns"><button class="clock-btn stop" onclick="finalizarCirugia(\''+c.id+'\')">⏹ Finalizar Cirugía<span class="sub2">sale la paciente · se detiene el reloj</span></button></div>';
+    h+='<div class="clock-btns"><button class="clock-btn stop" onclick="finalizarCirugia(\''+c.id+'\', this)">⏹ Finalizar Cirugía<span class="sub2">sale la paciente · se detiene el reloj</span></button></div>';
   } else {
     // No iniciada
     h+='<div class="clock-display" style="color:var(--muted)">00:00:00</div>';
@@ -548,16 +548,25 @@ async function iniciarCirugia(casoId){
   }catch(e){ alert('Error: '+e.message); }
 }
 
-async function finalizarCirugia(casoId){
+const FINALIZANDO={};
+async function finalizarCirugia(casoId, btn){
+  if(FINALIZANDO[casoId]) return;                 // ya hay una finalización en curso
   if(!confirm('¿Detener el reloj y finalizar la cirugía?')) return;
+  FINALIZANDO[casoId]=true;
+  if(btn){ btn.disabled=true; btn.style.opacity='.55'; btn.style.pointerEvents='none'; }
   try{
     if(TIMERS[casoId]){ clearInterval(TIMERS[casoId]); delete TIMERS[casoId]; }
     const res=await rpc('smi_finalizar_cirugia',{p_clave:CLAVE,p_caso_id:casoId});
-    if(res.excedido_min>0){
+    if(res && res.ya_finalizada){
+      alert('Esta cirugía ya estaba finalizada; no se agregó ningún cobro nuevo.');
+    } else if(res && res.excedido_min>0){
       alert('Cirugía finalizada.\n\nDuración real: '+res.duracion_real_min+' min\nTiempo cotizado: '+res.duracion_cotizada_min+' min\nExcedido: '+res.excedido_min+' min');
     }
     await cargar();
-  }catch(e){ alert('Error: '+e.message); }
+  }catch(e){
+    alert('Error: '+e.message);
+    if(btn){ btn.disabled=false; btn.style.opacity='1'; btn.style.pointerEvents='auto'; }
+  }finally{ FINALIZANDO[casoId]=false; }
 }
 
 async function cerrarCaso(casoId){
