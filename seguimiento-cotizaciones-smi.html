@@ -463,7 +463,7 @@ function renderPorCir(){
   });
   const arr=Object.keys(m).map(s=>{ let tOp=0,tRes=0;
     months.forEach(k=>{ const c=m[s][k]; if(c){ tOp+=c.op; tRes+=c.op+c.perd; } });
-    return {s,tOp,tRes}; }).filter(r=>r.tRes>0).sort((a,b)=>b.tRes-a.tRes);
+    return {s,tOp,tRes,p6:tRes?tOp/tRes:0}; }).filter(r=>r.tRes>0).sort((a,b)=> b.p6-a.p6 || b.tRes-a.tRes);
   if(!arr.length){ $('porCir').innerHTML='<div class="mp">Aún no hay cirugías resueltas en los últimos 6 meses.</div>'; return; }
   const bg=p=>p==null?'':'background:hsl('+Math.round(p*1.2)+',62%,90%)';
   let h='<div style="overflow-x:auto"><table class="cxm"><tr><th>Cirujano</th>';
