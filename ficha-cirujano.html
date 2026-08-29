@@ -1,0 +1,268 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Ficha del Cirujano · SMI</title>
+<link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:wght@500;600;700&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+:root{--crimson:#CD1D52;--bright:#E33C3B;--deep:#B22030;--ink:#1C1719;--muted:#857479;--faint:#A99CA0;
+  --bg:#FAF7F6;--card:#FFFFFF;--line:#ECE0E2;--tint:#F7F0F1;--pos:#1f8a52;--neg:#C1453A;--warn:#B7791F;}
+*{box-sizing:border-box}
+body{margin:0;background:var(--bg);color:var(--ink);font-family:Inter,system-ui,sans-serif;line-height:1.5}
+.wrap{max-width:1000px;margin:0 auto;padding:18px 16px 60px}
+h1{font-family:'Cormorant Garamond',serif;font-size:30px;font-weight:700;margin:.1em 0}
+h2{font-family:'Cormorant Garamond',serif;font-size:21px;font-weight:700;margin:0 0 10px}
+.sub{color:var(--muted);font-size:13px}
+.num{font-variant-numeric:tabular-nums}
+.card{background:var(--card);border:1px solid var(--line);border-radius:14px;padding:16px 18px;margin-top:16px}
+select,input{font:inherit;font-size:15px;padding:10px 12px;border:1px solid var(--line);border-radius:10px;background:#fff;color:var(--ink);width:100%}
+button{font:inherit;cursor:pointer}
+.btn{background:var(--crimson);color:#fff;border:0;border-radius:10px;padding:11px 16px;font-weight:700}
+#login{max-width:340px;margin:70px auto;text-align:center}
+#app{display:none}
+.top{display:flex;justify-content:space-between;align-items:flex-end;flex-wrap:wrap;gap:12px}
+.who{color:var(--muted);font-size:12px}
+.kpis{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:12px;margin-top:16px}
+.kpi{background:var(--card);border:1px solid var(--line);border-radius:12px;padding:13px 15px}
+.kpi .lab{font-size:11.5px;text-transform:uppercase;letter-spacing:.05em;color:var(--muted);font-weight:600}
+.kpi .val{font-size:26px;font-weight:700;margin-top:2px;font-variant-numeric:tabular-nums}
+.kpi .sub{font-size:11.5px;color:var(--faint);margin-top:2px}
+.tabs{display:flex;gap:6px;margin-top:20px;border-bottom:2px solid var(--line)}
+.tab{padding:10px 18px;font-weight:700;font-size:14px;color:var(--muted);cursor:pointer;border-bottom:2px solid transparent;margin-bottom:-2px}
+.tab.on{color:var(--crimson);border-bottom-color:var(--crimson)}
+table{border-collapse:collapse;width:100%;font-size:13.5px}
+th,td{border:1px solid var(--line);padding:7px 9px;text-align:center;white-space:nowrap}
+th{font-size:11.5px;text-transform:uppercase;letter-spacing:.03em;color:var(--muted);background:var(--tint)}
+td:first-child,th:first-child{text-align:left;font-weight:600}
+.wx{overflow-x:auto}
+.cxf{font-size:10.5px;color:var(--faint);font-weight:400}
+.cxtr{font-size:9px;color:var(--ink);vertical-align:1px}
+.chip{display:inline-block;font-size:11px;font-weight:700;padding:2px 9px;border-radius:20px;background:var(--tint);color:var(--crimson)}
+.rec{display:flex;gap:9px;align-items:flex-start;padding:9px 0;border-top:1px solid var(--line);font-size:13.5px}
+.rec:first-child{border-top:0}
+.rec .ic{font-size:16px;line-height:1.2}
+.big-num{font-size:22px;font-weight:700;font-variant-numeric:tabular-nums}
+.mut{color:var(--muted)}
+.pos{color:var(--pos)}.neg{color:var(--neg)}.warn{color:var(--warn)}
+.eff{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:12px}
+.eff .b{background:var(--tint);border-radius:10px;padding:12px 14px}
+.hidden{display:none}
+.mp{color:var(--muted);font-size:13px}
+.hh h2{margin-bottom:2px}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <div id="login" class="card">
+    <h1 style="color:var(--crimson)">Ficha del Cirujano</h1>
+    <p class="sub">Ingrese su clave de acceso</p>
+    <input id="clave" type="password" placeholder="Clave" style="margin:12px 0">
+    <button class="btn" id="entrar" style="width:100%">Entrar</button>
+    <p id="loginMsg" class="sub" style="color:var(--neg);margin-top:10px"></p>
+  </div>
+
+  <div id="app">
+    <div class="top">
+      <div>
+        <h1 style="color:var(--crimson)">Ficha del Cirujano</h1>
+        <div class="sub">Datos reales desde el OR System · últimos 6 meses</div>
+      </div>
+      <div class="who">Sesión: <strong id="whoTxt" style="color:var(--ink)">—</strong></div>
+    </div>
+
+    <div class="card">
+      <label class="sub" style="font-weight:600">Seleccione un cirujano</label>
+      <select id="selCir" style="margin-top:6px"></select>
+    </div>
+
+    <div id="cont" class="hidden">
+      <div class="kpis" id="kpis"></div>
+      <div class="tabs">
+        <div class="tab on" data-t="smi">👁 Con ojos de SMI</div>
+        <div class="tab" data-t="cir">🩺 Ojos del cirujano</div>
+      </div>
+      <div id="paneSMI"></div>
+      <div id="paneCir" class="hidden"></div>
+    </div>
+    <div id="vacio" class="mp" style="margin-top:20px"></div>
+  </div>
+</div>
+
+<script>
+const SUPA_URL='https://rhpguniznuhljiigwetq.supabase.co';
+const SUPA_KEY='sb_publishable_lVaI9a2wWFa0PSL3edPiRA_cVMlXDwG';
+let CLAVE='',SESION='',LISTA=[];
+const $=id=>document.getElementById(id);
+async function rpc(fn,body){
+  const r=await fetch(SUPA_URL+'/rest/v1/rpc/'+fn,{method:'POST',
+    headers:{'apikey':SUPA_KEY,'Authorization':'Bearer '+SUPA_KEY,'Content-Type':'application/json'},
+    body:JSON.stringify(body)});
+  const t=await r.text(); if(!r.ok) throw new Error(t||('HTTP '+r.status));
+  return t?JSON.parse(t):null;
+}
+const clp=n=>'$'+Math.round(+n||0).toLocaleString('es-CL');
+const clpK=n=>{n=+n||0; return n>=1e6?('$'+(n/1e6).toFixed(1)+'M'):clp(n);};
+const h1dec=m=>((+m||0)/60).toFixed(1);
+function mKey(d){ if(!d) return null; const s=String(d); const dt=new Date(s.length<=10?s+'T12:00:00':s); return isNaN(dt)?null:dt.getFullYear()+'-'+String(dt.getMonth()+1).padStart(2,'0'); }
+function lastMonths(k){ const out=[],now=new Date(); for(let i=k-1;i>=0;i--){ const d=new Date(now.getFullYear(),now.getMonth()-i,1); out.push(d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')); } return out; }
+function mShort(k){ if(!k) return ''; const p=k.split('-'); return ['ene','feb','mar','abr','may','jun','jul','ago','sep','oct','nov','dic'][(+p[1])-1]+' '+p[0].slice(2); }
+const esc=s=>String(s==null?'':s).replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
+
+async function entrar(){
+  const c=$('clave').value.trim(); if(!c) return;
+  $('loginMsg').textContent='';
+  try{
+    const u=await rpc('smi_login',{p_clave:c});
+    if(!u||!u.length){ $('loginMsg').textContent='Clave incorrecta o sin acceso.'; return; }
+    CLAVE=c; SESION=u[0].nombre||'—';
+    const r=await rpc('smi_ficha_cirujano',{p_clave:c});
+    LISTA=(r&&r.lista)||[];
+    $('login').style.display='none'; $('app').style.display='block';
+    $('whoTxt').textContent=SESION;
+    const sel=$('selCir');
+    sel.innerHTML='<option value="">— elija —</option>'+LISTA.map(c=>'<option value="'+esc(c.nom)+'">'+esc(c.nom)+'  ('+c.op+' operadas · '+c.cot+' cotiz.)</option>').join('');
+    sel.onchange=cargarCir;
+  }catch(e){ $('loginMsg').textContent='Clave incorrecta o sin acceso.'; }
+}
+$('entrar').onclick=entrar;
+$('clave').addEventListener('keydown',e=>{ if(e.key==='Enter') entrar(); });
+
+async function cargarCir(){
+  const nom=$('selCir').value;
+  if(!nom){ $('cont').classList.add('hidden'); $('vacio').textContent=''; return; }
+  $('vacio').textContent='Cargando…'; $('cont').classList.add('hidden');
+  try{
+    const r=await rpc('smi_ficha_cirujano',{p_clave:CLAVE,p_cirujano:nom});
+    const datos=(r&&r.datos)||[];
+    $('vacio').textContent='';
+    if(!datos.length){ $('vacio').textContent='Sin datos para este cirujano.'; return; }
+    render(nom,analizar(datos));
+    $('cont').classList.remove('hidden');
+  }catch(e){ $('vacio').textContent='Error: '+e.message; }
+}
+
+function analizar(datos){
+  const months=lastMonths(6);
+  const op=datos.filter(x=>x.estado==='operada');
+  const conv={}; months.forEach(k=>conv[k]={op:0,res:0});
+  datos.forEach(x=>{ if(x.estado!=='operada'&&x.estado!=='perdida')return; const k=mKey(x.creada_en); if(conv[k]){conv[k].res++; if(x.estado==='operada')conv[k].op++;} });
+  const mix={}; datos.forEach(x=>{ const k=x.cirugia||'—'; mix[k]=mix[k]||{cot:0,op:0,perd:0,montoOp:0,hCot:0,hReal:0,nDur:0};
+    mix[k].cot++; if(x.estado==='operada'){mix[k].op++; mix[k].montoOp+=(+x.total||0);
+      if(x.duracion_real_min!=null){mix[k].hReal+=x.duracion_real_min; mix[k].hCot+=(x.duracion_cotizada_min||0); mix[k].nDur++;}}
+    if(x.estado==='perdida')mix[k].perd++; });
+  let hCotTot=0,hRealTot=0,nDur=0,nExc=0,deltaSum=0;
+  op.forEach(x=>{ if(x.duracion_real_min!=null){ hRealTot+=x.duracion_real_min; hCotTot+=(x.duracion_cotizada_min||0); nDur++; const d=x.duracion_real_min-(x.duracion_cotizada_min||0); deltaSum+=d; if(d>0)nExc++; } });
+  let extTot=0; const extHab={};
+  datos.forEach(x=>{ (x.extras||[]).forEach(e=>{ if(e.estado!=='validado')return; extTot+=(+e.precio_total||0);
+    const cg=x.cirugia||'—', d=e.descripcion||e.tipo||'—'; extHab[cg]=extHab[cg]||{}; extHab[cg][d]=extHab[cg][d]||{n:0,sum:0}; extHab[cg][d].n++; extHab[cg][d].sum+=(+e.precio_total||0); }); });
+  const montoOpTot=op.reduce((s,x)=>s+(+x.total||0),0);
+  const deltaProm=nDur?Math.round(deltaSum/nDur):0;
+  const conv6=(()=>{let o=0,r=0;months.forEach(k=>{o+=conv[k].op;r+=conv[k].res;});return r?Math.round(o/r*100):0;})();
+  const extPct=montoOpTot?Math.round(extTot/montoOpTot*100):0;
+  return {datos,months,op,conv,conv6,mix,hCotTot,hRealTot,nDur,nExc,deltaProm,extTot,extPct,montoOpTot};
+}
+
+/* ---- matriz de conversión de una fila (por mes, con flecha) ---- */
+function convRow(A){
+  const bg=p=>p==null?'':'background:hsl('+Math.round(p*1.2)+',62%,90%)';
+  const ps=A.months.map(k=>{ const c=A.conv[k]; return c.res?{p:Math.round(c.op/c.res*100),op:c.op,res:c.res}:null; });
+  let h='<div class="wx"><table><tr>';
+  A.months.forEach(k=>h+='<th>'+mShort(k)+'</th>'); h+='<th>6 meses</th></tr><tr>';
+  ps.forEach((cur,i)=>{ if(!cur){ h+='<td><span class="cxf">—</span></td>'; return; }
+    let prev=null; for(let j=i-1;j>=0;j--){ if(ps[j]){prev=ps[j];break;} }
+    let tr=''; if(prev){ if(cur.p>prev.p)tr=' <span class="cxtr">▲</span>'; else if(cur.p<prev.p)tr=' <span class="cxtr">▼</span>'; }
+    h+='<td style="'+bg(cur.p)+'"><b>'+cur.p+'%</b>'+tr+'<div class="cxf">'+cur.op+'/'+cur.res+'</div></td>'; });
+  h+='<td style="font-weight:700;'+bg(A.conv6)+'">'+A.conv6+'%</td></tr></table></div>';
+  return h;
+}
+
+/* ---- mix de cirugías ---- */
+function mixTable(A){
+  const arr=Object.entries(A.mix).sort((a,b)=>b[1].op-a[1].op);
+  let h='<div class="wx"><table><tr><th>Cirugía</th><th>Cotiz.</th><th>Oper.</th><th>Conv.</th><th>Ticket prom.</th><th>Horas cot.→real</th></tr>';
+  arr.forEach(([k,v],i)=>{ const res=v.op+v.perd, cv=res?Math.round(v.op/res*100):null;
+    const tk=v.op?clpK(v.montoOp/v.op):'—';
+    const hc=v.nDur?(h1dec(v.hCot/v.nDur)+'→'+h1dec(v.hReal/v.nDur)+' h'):'—';
+    h+='<tr><td>'+esc(k)+(i===0?' <span class="chip">la que más hace</span>':'')+'</td><td class="num">'+v.cot+'</td><td class="num">'+v.op+'</td><td class="num">'+(cv==null?'—':cv+'%')+'</td><td class="num">'+tk+'</td><td class="num">'+hc+'</td></tr>'; });
+  h+='</table></div>'; return h;
+}
+
+/* ---- extras habituales por cirugía ---- */
+function extrasHab(A){
+  const cgs=Object.keys(A.extHab); if(!cgs.length) return '<div class="mp">Sin extras validados registrados.</div>';
+  let h='';
+  cgs.forEach(cg=>{
+    const items=Object.entries(A.extHab[cg]).sort((a,b)=>b[1].n-a[1].n).slice(0,6);
+    h+='<div style="margin-bottom:10px"><div style="font-weight:700;margin-bottom:4px">'+esc(cg)+'</div>';
+    h+='<div class="wx"><table><tr><th>Insumo / extra</th><th>Veces</th><th>Monto prom.</th></tr>';
+    items.forEach(([d,v])=>h+='<tr><td>'+esc(d)+'</td><td class="num">'+v.n+'</td><td class="num">'+clp(v.sum/v.n)+'</td></tr>');
+    h+='</table></div></div>';
+  });
+  return h;
+}
+
+/* ---- valor + recomendaciones (ojos de SMI) ---- */
+function valorRec(A){
+  const recs=[];
+  if(A.deltaProm>15) recs.push(['⏱','Sus cirugías <b>exceden en promedio '+A.deltaProm+' min</b> lo cotizado ('+A.nExc+' de '+A.nDur+'). Conviene ajustar las horas cotizadas o revisar la planificación de pabellón.']);
+  else if(A.deltaProm< -10) recs.push(['⏱','Termina <b>'+Math.abs(A.deltaProm)+' min antes</b> de lo cotizado en promedio — buena gestión del pabellón.']);
+  if(A.conv6<40 && A.op.length>0) recs.push(['📉','Conversión de 6 meses baja (<b>'+A.conv6+'%</b>). Reforzar el seguimiento comercial de sus cotizaciones.']);
+  if(A.conv6>=65 && A.op.length>=5) recs.push(['⭐','Alto valor: opera <b>'+A.op.length+' cirugías</b> con <b>'+A.conv6+'%</b> de conversión — cirujano clave para SMI.']);
+  if(A.extPct>12) recs.push(['📦','Los extras son el <b>'+A.extPct+'%</b> del monto operado. Revisar si los insumos habituales deberían ir en la ficha base (menos sorpresas, mejor cotización).']);
+  if(!recs.length) recs.push(['✓','Comportamiento dentro de lo esperado. Sin alertas.']);
+  // score simple
+  let score='Medio', cls='warn';
+  if(A.op.length>=5 && A.conv6>=60){ score='Alto valor'; cls='pos'; }
+  else if(A.op.length<2 || A.conv6<35){ score='A observar'; cls='neg'; }
+  let h='<div style="display:flex;align-items:baseline;gap:12px;margin-bottom:8px"><span class="big-num '+cls+'">'+score+'</span><span class="mp">score compuesto: volumen + conversión + eficiencia de tiempo</span></div>';
+  h+=recs.map(r=>'<div class="rec"><span class="ic">'+r[0]+'</span><span>'+r[1]+'</span></div>').join('');
+  return h;
+}
+
+function kpiCard(lab,val,sub){ return '<div class="kpi"><div class="lab">'+lab+'</div><div class="val num">'+val+'</div><div class="sub">'+(sub||'')+'</div></div>'; }
+
+function render(nom,A){
+  $('kpis').innerHTML=
+    kpiCard('Cotizaciones',A.datos.length,'total')+
+    kpiCard('Conversión 6m',A.conv6+'%','operó ÷ resueltas')+
+    kpiCard('Cirugías operadas',A.op.length,'')+
+    kpiCard('Horas de pabellón',h1dec(A.hRealTot)+' h','usadas (real)')+
+    kpiCard('Monto operado',clpK(A.montoOpTot),'ingreso que trae')+
+    kpiCard('Extras cobradas',clpK(A.extTot),A.extPct+'% del operado');
+
+  // Pestaña A — ojos de SMI
+  let a='';
+  a+='<div class="card hh"><h2>Conversión mensual</h2><div class="sub" style="margin-bottom:8px">Por mes en que cotizó · ▲▼ vs mes anterior</div>'+convRow(A)+'</div>';
+  a+='<div class="card hh"><h2>Mix de cirugías</h2>'+mixTable(A)+'</div>';
+  a+='<div class="card hh"><h2>Eficiencia de pabellón</h2><div class="eff">'
+    +'<div class="b"><div class="mp">Horas que solicita</div><div class="big-num">'+h1dec(A.hCotTot)+' h</div></div>'
+    +'<div class="b"><div class="mp">Horas que usa</div><div class="big-num">'+h1dec(A.hRealTot)+' h</div></div>'
+    +'<div class="b"><div class="mp">Desviación promedio</div><div class="big-num '+(A.deltaProm>0?'neg':'pos')+'">'+(A.deltaProm>0?'+':'')+A.deltaProm+' min</div></div>'
+    +'<div class="b"><div class="mp">Cirugías que exceden</div><div class="big-num">'+A.nExc+' / '+A.nDur+'</div></div>'
+    +'</div></div>';
+  a+='<div class="card hh"><h2>Extras habituales por cirugía</h2><div class="sub" style="margin-bottom:8px">Candidatos a subir a la ficha base</div>'+extrasHab(A)+'</div>';
+  a+='<div class="card hh"><h2>Valor para SMI &amp; recomendaciones</h2>'+valorRec(A)+'</div>';
+  $('paneSMI').innerHTML=a;
+
+  // Pestaña B — ojos del cirujano
+  let b='';
+  b+='<div class="card hh"><h2>Su conversión</h2><div class="sub" style="margin-bottom:8px">De lo que cotizó cada mes, cuánto terminó operando</div>'+convRow(A)+'</div>';
+  b+='<div class="card hh"><h2>Su gestión del tiempo de pabellón</h2><div class="eff">'
+    +'<div class="b"><div class="mp">Horas que solicita</div><div class="big-num">'+h1dec(A.hCotTot)+' h</div></div>'
+    +'<div class="b"><div class="mp">Horas que usa</div><div class="big-num">'+h1dec(A.hRealTot)+' h</div></div>'
+    +'<div class="b"><div class="mp">En promedio</div><div class="big-num '+(A.deltaProm>0?'neg':'pos')+'">'+(A.deltaProm>0?'+':'')+A.deltaProm+' min</div></div>'
+    +'</div><div class="mp" style="margin-top:8px">Cotizar el tiempo lo más real posible ayuda a que su pabellón esté disponible cuando lo necesita y evita cobros de tiempo adicional a sus pacientes.</div></div>';
+  b+='<div class="card hh"><h2>Transparencia de extras</h2><div class="sub" style="margin-bottom:8px">Lo que se cobró en sus casos, por cirugía</div>'+extrasHab(A)+'</div>';
+  $('paneCir').innerHTML=b;
+}
+
+document.querySelector('.tabs').addEventListener('click',e=>{
+  const t=e.target.closest('.tab'); if(!t) return;
+  document.querySelectorAll('.tab').forEach(x=>x.classList.remove('on')); t.classList.add('on');
+  $('paneSMI').classList.toggle('hidden',t.dataset.t!=='smi');
+  $('paneCir').classList.toggle('hidden',t.dataset.t!=='cir');
+});
+</script>
+</body>
+</html>
