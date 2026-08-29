@@ -121,6 +121,7 @@ td.num,th.num{text-align:right;font-variant-numeric:tabular-nums}
 .stbtns button.act-pagada.sel{background:#0E7C86;color:#fff;border-color:#0E7C86}
 .stbtns button.act-operada.sel{background:var(--pos);color:#fff;border-color:var(--pos)}
 .stbtns button.act-perdida.sel{background:var(--neg);color:#fff;border-color:var(--neg)}
+.stbtns button.reactivar-btn{background:#1f8a52;color:#fff;border-color:#1f8a52;font-weight:700}
 .motivo{margin-top:9px;display:none}
 .motivo.show{display:block}
 .motivo select{width:100%;padding:9px 11px;border:1px solid var(--neg);border-radius:9px;font-family:var(--sans);font-size:13px;background:#FFF7F8}
@@ -492,6 +493,7 @@ function rowHTML(x){
     else if(dd>D_ENVEJECE) edadInfo='<div class="ebadge env">⚠ Envejecida · '+dd+' días</div>';
   }
   let btns=ESTADOS.filter(e=>e!=='operada').map(e=>'<button class="act-'+e+(x.estado===e?' sel':'')+'" onclick="marcar(\''+x.folio+'\',\''+e+'\',this)">'+ELAB[e]+'</button>').join('');
+  if(x.estado==='perdida') btns='<button class="reactivar-btn" onclick="reactivar(\''+x.folio+'\')">↩ Reactivar</button>'+btns;
   let mot='<div class="motivo" id="mot-'+x.folio+'"><select onchange="marcarPerdida(\''+x.folio+'\',this.value)"><option value="">Motivo de la pérdida…</option>'+MOTIVOS.map(m=>'<option'+(x.motivo_perdida===m?' selected':'')+'>'+m+'</option>').join('')+'</select></div>';
   const showMot=x.estado==='perdida'?' show':'';
   // Formulario de fecha para agendar
@@ -579,6 +581,11 @@ async function marcar(folio,estado,btn){
     $('fcx-'+folio).classList.add('show'); return;
   }
   await aplicar(folio,estado,null,btn);
+}
+
+function reactivar(folio){
+  if(!confirm('Reactivar el folio '+folio+'.\n\nVuelve a las cirugias activas (Entregada) y se limpia el motivo de perdida. Desde ahi podras agendarle una nueva fecha.\n\n¿Continuar?')) return;
+  aplicar(folio,'entregada',null);
 }
 
 /* ═══ FICHA PREQUIRÚRGICA ═══ */
