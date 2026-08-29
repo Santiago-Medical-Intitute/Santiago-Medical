@@ -122,6 +122,12 @@ td.num,th.num{text-align:right;font-variant-numeric:tabular-nums}
 .stbtns button.act-operada.sel{background:var(--pos);color:#fff;border-color:var(--pos)}
 .stbtns button.act-perdida.sel{background:var(--neg);color:#fff;border-color:var(--neg)}
 .stbtns button.reactivar-btn{background:#1f8a52;color:#fff;border-color:#1f8a52;font-weight:700}
+table.cxm{border-collapse:collapse;width:100%;font-size:13px}
+table.cxm th,table.cxm td{border:1px solid var(--line);padding:6px 8px;text-align:center;white-space:nowrap}
+table.cxm th{font-size:11.5px;color:#6b716c;font-weight:700;text-transform:uppercase;letter-spacing:.03em}
+table.cxm td:first-child,table.cxm th:first-child{text-align:left;font-weight:600}
+table.cxm tr:hover td{outline:1px solid rgba(0,0,0,.06)}
+.cxf{font-size:10.5px;color:#8a8a82;font-weight:400;margin-top:1px}
 .motivo{margin-top:9px;display:none}
 .motivo.show{display:block}
 .motivo select{width:100%;padding:9px 11px;border:1px solid var(--neg);border-radius:9px;font-family:var(--sans);font-size:13px;background:#FFF7F8}
@@ -216,10 +222,8 @@ td.num,th.num{text-align:right;font-variant-numeric:tabular-nums}
   <div class="kpis" id="kpis"></div>
   <div id="metas"></div>
 
-  <div class="cols">
-    <div class="box"><h3>Conversión por cirujano</h3><div id="porCir"></div></div>
-    <div class="box"><h3>Motivos de pérdida</h3><div id="motivos"></div></div>
-  </div>
+  <div class="box"><h3>Conversión por cirujano · últimos 6 meses</h3><div id="porCir"></div></div>
+  <div class="box"><h3>Motivos de pérdida</h3><div id="motivos"></div></div>
 
   <div class="toolbar">
     <input class="search" id="q" placeholder="Buscar por paciente, cirujano, RUT o folio…">
@@ -448,15 +452,33 @@ function kpi(lab,val,sub,cls){ return '<div class="kpi"><div class="lab">'+lab+'
 function heroKpi(lab,val,sub){ return '<div class="kpi hero"><div class="lab">'+lab+'</div><div class="val">'+val+'</div><div class="sub">'+sub+'</div></div>'; }
 
 function renderPorCir(){
-  const m={};
-  ROWS.forEach(x=>{ const k=x.cirujano||'—'; m[k]=m[k]||{ent:0,op:0,perd:0,montoOp:0};
-    m[k].ent++; if(x.estado==='operada'){m[k].op++;m[k].montoOp+=(+x.total||0);} if(x.estado==='perdida')m[k].perd++; });
-  const arr=Object.entries(m).sort((a,b)=>b[1].ent-a[1].ent);
-  if(!arr.length){ $('porCir').innerHTML='<div class="mp">Aún no hay datos.</div>'; return; }
-  let h='<table><tr><th>Cirujano</th><th class="num">Cotiz.</th><th class="num">Oper.</th><th class="num">Conv.</th><th class="num">Monto op.</th></tr>';
-  arr.forEach(([k,v])=>{ const res=v.op+v.perd; const c=res?Math.round(v.op/res*100):0;
-    h+='<tr><td>'+k+'</td><td class="num">'+v.ent+'</td><td class="num">'+v.op+'</td><td class="num">'+(res?c+'%':'—')+'</td><td class="num">'+clp(v.montoOp)+'</td></tr>'; });
-  h+='</table>'; $('porCir').innerHTML=h;
+  const months=lastMonths(6);
+  const m={};  // m[cirujano][mesKey] = {op, perd}
+  ROWS.forEach(x=>{
+    if(x.estado!=='operada' && x.estado!=='perdida') return;   // solo resueltas
+    const gk=mKey(x.creada_en); if(!months.includes(gk)) return; // cohorte por mes de cotización
+    const s=x.cirujano||'—';
+    (m[s]=m[s]||{})[gk]=m[s][gk]||{op:0,perd:0};
+    if(x.estado==='operada') m[s][gk].op++; else m[s][gk].perd++;
+  });
+  const arr=Object.keys(m).map(s=>{ let tOp=0,tRes=0;
+    months.forEach(k=>{ const c=m[s][k]; if(c){ tOp+=c.op; tRes+=c.op+c.perd; } });
+    return {s,tOp,tRes}; }).filter(r=>r.tRes>0).sort((a,b)=>b.tRes-a.tRes);
+  if(!arr.length){ $('porCir').innerHTML='<div class="mp">Aún no hay cirugías resueltas en los últimos 6 meses.</div>'; return; }
+  const bg=p=>p==null?'':'background:hsl('+Math.round(p*1.2)+',62%,90%)';
+  let h='<div style="overflow-x:auto"><table class="cxm"><tr><th>Cirujano</th>';
+  months.forEach(k=>h+='<th>'+mShort(k)+'</th>');
+  h+='<th>6 meses</th></tr>';
+  arr.forEach(r=>{
+    h+='<tr><td>'+r.s+'</td>';
+    months.forEach(k=>{ const c=m[r.s][k]; const res=c?c.op+c.perd:0;
+      const p=res?Math.round(c.op/res*100):null;
+      h+='<td style="'+bg(p)+'">'+(p==null?'<span class="cxf">—</span>':('<b>'+p+'%</b><div class="cxf">'+c.op+'/'+res+'</div>'))+'</td>'; });
+    const p6=r.tRes?Math.round(r.tOp/r.tRes*100):null;
+    h+='<td style="font-weight:700;'+bg(p6)+'">'+p6+'%<div class="cxf">'+r.tOp+'/'+r.tRes+'</div></td></tr>';
+  });
+  h+='</table></div><div class="mp" style="margin-top:6px">% = operadas ÷ resueltas (operadas + perdidas) de lo cotizado ese mes. El mes en curso es provisional (aún hay cotizaciones abiertas).</div>';
+  $('porCir').innerHTML=h;
 }
 
 function renderMotivos(){
