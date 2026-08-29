@@ -160,7 +160,7 @@ function analizar(datos){
   const deltaProm=nDur?Math.round(deltaSum/nDur):0;
   const conv6=(()=>{let o=0,r=0;months.forEach(k=>{o+=conv[k].op;r+=conv[k].res;});return r?Math.round(o/r*100):0;})();
   const extPct=montoOpTot?Math.round(extTot/montoOpTot*100):0;
-  return {datos,months,op,conv,conv6,mix,hCotTot,hRealTot,nDur,nExc,deltaProm,extTot,extPct,montoOpTot};
+  return {datos,months,op,conv,conv6,mix,hCotTot,hRealTot,nDur,nExc,deltaProm,extTot,extPct,extHab,montoOpTot};
 }
 
 /* ---- matriz de conversión de una fila (por mes, con flecha) ---- */
