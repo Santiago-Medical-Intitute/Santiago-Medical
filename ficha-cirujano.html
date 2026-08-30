@@ -430,10 +430,9 @@ function render(nom,A){
   const conT=A.cxTiempoExtra, sinT=Math.max(0,A.op.length-conT);
   b+='<div class="card hh"><h2>Su gestión del tiempo de pabellón</h2><div class="eff">'
     +'<div class="b"><div class="mp">Horas que solicita</div><div class="big-num">'+h1dec(A.hCotTot)+' h</div></div>'
-    +'<div class="b"><div class="mp">Horas que usa</div><div class="big-num">'+h1dec(A.hRealTot)+' h</div></div>'
     +'<div class="b"><div class="mp">Cirugías sin tiempo extra</div><div class="big-num pos">'+sinT+'</div></div>'
     +'<div class="b"><div class="mp">Cirugías con tiempo extra</div><div class="big-num">'+conT+'</div></div>'
-    +'</div><div class="mp" style="margin-top:8px">De sus <b>'+A.op.length+'</b> cirugías, en <b>'+sinT+'</b> el tiempo cotizado alcanzó y en <b>'+conT+'</b> se necesitó tiempo adicional. En total usó <b>'+h1dec(A.hRealTot)+' h</b> de las <b>'+h1dec(A.hCotTot)+' h</b> que cotizó. Cotizar el tiempo lo más real posible mantiene su pabellón disponible y evita cobros de tiempo adicional a sus pacientes.</div></div>';
+    +'</div><div class="mp" style="margin-top:8px">De sus <b>'+A.op.length+'</b> cirugías, en <b>'+sinT+'</b> el tiempo cotizado alcanzó y en <b>'+conT+'</b> se necesitó tiempo adicional. Cotizar el tiempo lo más real posible mantiene su pabellón disponible y evita cobros de tiempo adicional a sus pacientes.</div></div>';
   b+='<div class="card hh"><h2>Sus cirugías más frecuentes en Santiago Medical Institute</h2><div class="sub" style="margin-bottom:8px">Las que más realiza aquí</div>'+topCirugias(A,3)+'</div>';
   b+='<div class="card hh"><h2>Sus extras más usados</h2><div class="sub" style="margin-bottom:8px">Los que más aparecen en el total de sus cirugías. La idea: que la ficha base de cada procedimiento ya los incluya, para que no salgan como extra ni como sorpresa en la cuenta de su paciente.</div>'+topExtras(A,5)+'</div>';
   b+='<div class="card hh"><h2>Por qué operar en Santiago Medical Institute</h2>'+valorCirujano(A)+'</div>';
