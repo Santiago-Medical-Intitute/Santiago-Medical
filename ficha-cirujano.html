@@ -86,7 +86,15 @@ ol.rank li .num{color:var(--muted);font-weight:600;white-space:nowrap}
   #phLogo{height:58px;margin:0 auto 6px}
   #printHead h1{font-family:'Cormorant Garamond',Georgia,serif;font-size:24px}
   #paneCir,#paneCir.hidden{display:block !important}
-  #paneCir .card{margin-top:12px;break-inside:avoid;border-color:#ddd}
+  /* tarjetas cortas: no se parten */
+  #paneCir .card{margin-top:12px;border-color:#ddd;break-inside:avoid;page-break-inside:avoid}
+  /* tarjeta larga de valor: fluye entre páginas, sin caja, pero cada sección queda entera */
+  #valorCard{border:0;padding:0;background:none;break-inside:auto;page-break-inside:auto}
+  #valorCard>h2{break-after:avoid;page-break-after:avoid}
+  #valorCard .lead,#valorCard .vsec{break-inside:avoid;page-break-inside:avoid;margin-top:12px}
+  /* unidades que nunca se cortan */
+  .kpi,.funnel,.eff .b,ol.rank li,.rec,table,tr{break-inside:avoid;page-break-inside:avoid}
+  h2,h3{break-after:avoid;page-break-after:avoid}
   @page{margin:14mm}
 }
 </style>
@@ -366,6 +374,10 @@ function valorCirujano(A){
   S.push(['🛡️ Un equipo que ya conoce su forma de operar',
     ['Anestesia, arsenalería, enfermería y recuperación trabajando coordinadamente y familiarizados con su práctica.',
      'Menos variables el día de la cirugía, mayor continuidad del equipo y una experiencia más segura y predecible tanto para usted como para su paciente.']]);
+  S.push(['📊 Sus datos, convertidos en información para su práctica',
+    ['Este informe es parte de nuestra propuesta de valor.',
+     'Conversión de pacientes, tiempos quirúrgicos, utilización de pabellón, insumos y pacientes que aún no se han operado, organizados para identificar oportunidades concretas de mejora.',
+     'Porque cuando la información está disponible, es más fácil saber dónde actuar.']]);
   if(totCx>0){
     if(conT>0){
       S.push(['⏱ Un punto para mejorar juntos: sus tiempos adicionales',
@@ -380,10 +392,6 @@ function valorCirujano(A){
   S.push(['📦 Cotizaciones más precisas, menos sorpresas para el paciente',
     ['Queremos construir junto a usted una ficha base para cada una de sus cirugías habituales, incorporando desde el inicio los insumos y requerimientos que utiliza regularmente.',
      'El resultado: cotizaciones más precisas, preparación más eficiente del pabellón y mayor certeza para el paciente desde el momento en que decide operarse.']]);
-  S.push(['📊 Sus datos, convertidos en información para su práctica',
-    ['Este informe es parte de nuestra propuesta de valor.',
-     'Conversión de pacientes, tiempos quirúrgicos, utilización de pabellón, insumos y pacientes que aún no se han operado, organizados para identificar oportunidades concretas de mejora.',
-     'Porque cuando la información está disponible, es más fácil saber dónde actuar.']]);
   S.push(['🤝 Usted se concentra en operar; nosotros, en que todo lo demás funcione',
     ['Desde la cotización y coordinación del paciente hasta el pabellón, los insumos, la recuperación y el seguimiento administrativo.',
      'Y además, le devolvemos información sobre su propia actividad para ayudarlo a tomar mejores decisiones.',
@@ -464,7 +472,7 @@ function render(nom,A){
     +'</div><div class="mp" style="margin-top:8px">De sus <b>'+A.op.length+'</b> cirugías, en <b>'+sinT+'</b> el tiempo cotizado alcanzó y en <b>'+conT+'</b> se necesitó tiempo adicional. Cotizar el tiempo lo más real posible mantiene su pabellón disponible y evita cobros de tiempo adicional a sus pacientes.</div></div>';
   b+='<div class="card hh"><h2>Sus cirugías más frecuentes en Santiago Medical Institute</h2><div class="sub" style="margin-bottom:8px">Las que más realiza aquí</div>'+topCirugias(A,3)+'</div>';
   b+='<div class="card hh"><h2>Sus extras más usados</h2><div class="sub" style="margin-bottom:8px">Los que más aparecen en el total de sus cirugías. La idea: que la ficha base de cada procedimiento ya los incluya, para que no salgan como extra ni como sorpresa en la cuenta de su paciente.</div>'+topExtras(A,5)+'</div>';
-  b+='<div class="card hh"><h2>Por qué operar en Santiago Medical Institute</h2>'+valorCirujano(A)+'</div>';
+  b+='<div class="card hh" id="valorCard"><h2>Por qué operar en Santiago Medical Institute</h2>'+valorCirujano(A)+'</div>';
   $('paneCir').innerHTML=b;
 
   $('phLogo').src=SMI_LOGO;
