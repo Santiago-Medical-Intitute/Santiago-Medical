@@ -31,6 +31,7 @@ button{font:inherit;cursor:pointer}
 .kpi .lab{font-size:11.5px;text-transform:uppercase;letter-spacing:.05em;color:var(--muted);font-weight:600}
 .kpi .val{font-size:26px;font-weight:700;margin-top:2px;font-variant-numeric:tabular-nums}
 .kpi .sub{font-size:11.5px;color:var(--faint);margin-top:2px}
+#kpis.cir .kInterno{display:none}   /* en la pestaña del cirujano no se muestran Monto operado ni Extras cobradas */
 .tabs{display:flex;gap:6px;margin-top:20px;border-bottom:2px solid var(--line)}
 .tab{padding:10px 18px;font-weight:700;font-size:14px;color:var(--muted);cursor:pointer;border-bottom:2px solid transparent;margin-bottom:-2px}
 .tab.on{color:var(--deep);border-bottom-color:var(--deep)}
@@ -71,6 +72,7 @@ ol.rank li .num{color:var(--muted);font-weight:600;white-space:nowrap}
   body{background:#fff}
   .wrap{max-width:100%;padding:0}
   #login,#selCard,.top,.tabs,#paneSMI,#vacio,.noprint{display:none !important}
+  #kpis .kInterno{display:none !important}
   #kpis{margin-top:0 !important}
   #printHead{display:block !important;text-align:center;margin-bottom:10px;border-bottom:2px solid var(--deep);padding-bottom:10px}
   #phLogo{height:58px;margin:0 auto 6px}
@@ -385,7 +387,9 @@ function render(nom,A){
     kpiCard('Cirugías operadas',A.op.length,'en '+A.pacOp+' pacientes')+
     kpiCard('Conversión',A.convAll+'%',A.pacOp+' de '+A.pacTot+' pacientes (RUT)')+
     kpiCard('Cotizaciones',A.datos.length,'folios (varios por paciente)')+
-    kpiCard('Horas de pabellón',h1dec(A.hRealTot)+' h','usadas (real)');
+    kpiCard('Horas de pabellón',h1dec(A.hRealTot)+' h','usadas (real)')+
+    kpiCard('Monto operado',clpK(A.montoOpTot),'ingreso que trae','kInterno')+
+    kpiCard('Extras cobradas',clpK(A.extTot),A.extPct+'% del operado','kInterno');
 
   // Pestaña A — ojos de SMI
   let a='';
@@ -433,6 +437,7 @@ document.querySelector('.tabs').addEventListener('click',e=>{
   document.querySelectorAll('.tab').forEach(x=>x.classList.remove('on')); t.classList.add('on');
   $('paneSMI').classList.toggle('hidden',t.dataset.t!=='smi');
   $('paneCir').classList.toggle('hidden',t.dataset.t!=='cir');
+  $('kpis').classList.toggle('cir',t.dataset.t==='cir');
 });
 </script>
 </body>
