@@ -58,6 +58,12 @@ td:first-child,th:first-child{text-align:left;font-weight:600}
 .fleg .dot{display:inline-block;width:11px;height:11px;border-radius:3px;margin-right:6px;vertical-align:-1px}
 .mp{color:var(--muted);font-size:13px}
 .hh h2{margin-bottom:2px}
+ol.rank{margin:6px 0 0;padding:0;list-style:none;counter-reset:r}
+ol.rank li{counter-increment:r;display:flex;align-items:center;gap:11px;padding:10px 2px;border-top:1px solid var(--line);font-size:14.5px}
+ol.rank li:first-child{border-top:0}
+ol.rank li::before{content:counter(r);flex:0 0 23px;height:23px;border-radius:50%;background:var(--deep);color:#fff;font-size:12px;font-weight:700;display:inline-flex;align-items:center;justify-content:center;-webkit-print-color-adjust:exact;print-color-adjust:exact}
+ol.rank li>span:first-of-type{flex:1;font-weight:600}
+ol.rank li .num{color:var(--muted);font-weight:600;white-space:nowrap}
 #printHead{display:none}
 #phLogo{height:52px;width:auto}
 @media print{
@@ -154,8 +160,7 @@ function grupoCx(nom){
   return nom||'—';
 }
 const FAM_ORDEN=['Tiempo adicional','Insumos','Suturas','Drogas anestésicas','Medicamentos','Sueros y fluidos','Exámenes de laboratorio','Hospitalización','Otros'];
-const UMBRAL_U=5;                                   // en la vista del cirujano solo se muestran insumos con consumo alto (>5 u/caso prom.)
-const FAM_OCULTA_CIR={'Drogas anestésicas':1,'Tiempo adicional':1}; // no se le muestran al cirujano (ventaja de SMI / ya está en gestión de tiempo)
+const FAM_OCULTA_CIR={'Drogas anestésicas':1};      // no se le muestra al cirujano (ventaja de SMI)
 // Agrupa cada extra en una familia (calibrado con el vocabulario real de extras_pabellon)
 function grupoExtra(desc,tipo){
   const s=((desc||'')+' '+(tipo||'')).toLowerCase().replace(/·/g,' ').replace(/\s+/g,' ');
@@ -288,26 +293,7 @@ function extrasHab(A,modo){
   if(!cats.length) return '<div class="mp">Sin extras validados registrados — la ficha base cubrió todo. 👌</div>';
   cats.sort((a,b)=>A.ext[b].n-A.ext[a].n);
 
-  if(modo==='cir'){
-    let any=false, h='';
-    cats.forEach(cat=>{ const e=A.ext[cat];
-      const fams=Object.keys(e.fam)
-        .filter(F=>!FAM_OCULTA_CIR[F] && (e.fam[F].qty/e.fam[F].casos)>UMBRAL_U)
-        .sort((a,b)=>(e.fam[b].qty/e.fam[b].casos)-(e.fam[a].qty/e.fam[a].casos));
-      if(!fams.length) return; any=true;
-      h+='<div style="margin-bottom:14px"><div style="font-weight:700;margin-bottom:4px">'+esc(cat)+' <span class="mp" style="font-weight:400">· '+e.n+' cirugías</span></div>';
-      h+='<div class="wx"><table><tr><th>Insumo</th><th>En sus cirugías</th><th>Cantidad típica</th></tr>';
-      fams.forEach(F=>{ const f=e.fam[F]; const pct=Math.round(f.casos/e.n*100);
-        const mn=Math.min.apply(null,f.qtys), mx=Math.max.apply(null,f.qtys);
-        const rango=(mn===mx?mn:(mn+'–'+mx))+' u';
-        h+='<tr><td>'+esc(F)+'</td><td class="num">'+pct+'%</td><td class="num">'+rango+'</td></tr>'; });
-      h+='</table></div></div>';
-    });
-    if(!any) return '<div class="mp">Sus cirugías usan pocos insumos extra — la ficha base cubre lo principal. 👌</div>';
-    return h;
-  }
-
-  // modo 'smi' (interno)
+  // vista interna de detalle (el cirujano ve el resumen top-3 / top-5 aparte)
   let h='';
   cats.forEach(cat=>{ const e=A.ext[cat];
     const fams=Object.keys(e.fam).sort((a,b)=> (e.fam[b].casos-e.fam[a].casos) || (FAM_ORDEN.indexOf(a)-FAM_ORDEN.indexOf(b)) );
@@ -322,6 +308,24 @@ function extrasHab(A,modo){
     h+='</table></div></div>';
   });
   return h;
+}
+
+/* ---- resumen para el cirujano: top-3 cirugías y top-5 extras (en grande) ---- */
+function topCirugias(A,k){
+  const arr=Object.entries(A.mix).map(([cat,v])=>({cat,op:v.op})).filter(x=>x.op>0).sort((a,b)=>b.op-a.op).slice(0,k);
+  if(!arr.length) return '<div class="mp">Aún sin cirugías registradas.</div>';
+  let h='<ol class="rank">';
+  arr.forEach(x=>{ h+='<li><span>'+esc(x.cat)+'</span><span class="num">'+x.op+(x.op===1?' cirugía':' cirugías')+'</span></li>'; });
+  return h+'</ol>';
+}
+function topExtras(A,k){
+  const tot=A.op.length||1, acc={};
+  Object.values(A.ext).forEach(e=>{ Object.entries(e.fam).forEach(([F,f])=>{ if(FAM_OCULTA_CIR[F])return; acc[F]=(acc[F]||0)+f.casos; }); });
+  const arr=Object.entries(acc).map(([F,c])=>({F,c,pct:Math.round(c/tot*100)})).sort((a,b)=>b.c-a.c).slice(0,k);
+  if(!arr.length) return '<div class="mp">Sus cirugías casi no requieren extras — la ficha base cubre lo necesario. 👌</div>';
+  let h='<ol class="rank">';
+  arr.forEach(x=>{ h+='<li><span>'+esc(x.F)+'</span><span class="num">en el '+x.pct+'% de sus cirugías</span></li>'; });
+  return h+'</ol>';
 }
 
 /* ---- valor + recomendaciones (ojos de SMI) ---- */
@@ -392,7 +396,8 @@ function render(nom,A){
     +'<div class="b"><div class="mp">Horas que usa</div><div class="big-num">'+h1dec(A.hRealTot)+' h</div></div>'
     +'<div class="b"><div class="mp">En promedio</div><div class="big-num '+(A.deltaProm>0?'neg':'pos')+'">'+(A.deltaProm>0?'+':'')+A.deltaProm+' min</div></div>'
     +'</div><div class="mp" style="margin-top:8px">Cotizar el tiempo lo más real posible ayuda a que su pabellón esté disponible cuando lo necesita y evita cobros de tiempo adicional a sus pacientes.</div></div>';
-  b+='<div class="card hh"><h2>Insumos que más usa</h2><div class="sub" style="margin-bottom:8px">Insumos de consumo alto en sus cirugías (más de '+UMBRAL_U+' unidades por caso en promedio), como rango de unidades. La idea: que la ficha base de cada procedimiento ya los incluya y no aparezcan como extra ni como sorpresa en la cuenta de su paciente.</div>'+extrasHab(A,'cir')+'</div>';
+  b+='<div class="card hh"><h2>Sus cirugías más frecuentes en Santiago Medical Institute</h2><div class="sub" style="margin-bottom:8px">Las tres que más realiza aquí</div>'+topCirugias(A,3)+'</div>';
+  b+='<div class="card hh"><h2>Sus extras más usados</h2><div class="sub" style="margin-bottom:8px">Los que más aparecen en el total de sus cirugías. La idea: que la ficha base de cada procedimiento ya los incluya, para que no salgan como extra ni como sorpresa en la cuenta de su paciente.</div>'+topExtras(A,5)+'</div>';
   $('paneCir').innerHTML=b;
 
   $('phLogo').src=SMI_LOGO;
