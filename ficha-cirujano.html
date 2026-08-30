@@ -43,6 +43,7 @@ td:first-child,th:first-child{text-align:left;font-weight:600}
 .cxf{font-size:10.5px;color:var(--faint);font-weight:400}
 .cxtr{font-size:9px;color:var(--ink);vertical-align:1px}
 .chip{display:inline-block;font-size:11px;font-weight:700;padding:2px 9px;border-radius:20px;background:var(--tint);color:var(--deep)}
+.lead{background:var(--tint);border-left:4px solid var(--deep);border-radius:8px;padding:12px 14px;font-size:14.5px;line-height:1.55;margin-bottom:10px;-webkit-print-color-adjust:exact;print-color-adjust:exact}
 .rec{display:flex;gap:9px;align-items:flex-start;padding:9px 0;border-top:1px solid var(--line);font-size:13.5px}
 .rec:first-child{border-top:0}
 .rec .ic{font-size:16px;line-height:1.2}
@@ -335,16 +336,25 @@ function topExtras(A,k){
 function valorCirujano(A){
   const ab=A.pacTot-A.pacRes, varH=(A.hRealTot-A.hCotTot)/60;
   const varTxt=(varH>=0?'+':'')+varH.toFixed(1).replace('.',',')+' h';
+  let h='';
+  // Titular: proyección de oportunidad, calculada con los datos del cirujano
+  if(ab>0){
+    const mitad=Math.round(ab/2), projOp=A.pacOp+mitad;
+    const projConv=A.pacTot?Math.round(projOp/A.pacTot*100):0;
+    const projCx=A.pacOp>0? A.op.length+Math.round(mitad*A.op.length/A.pacOp) : A.op.length+mitad;
+    const dup=(A.op.length>0 && projCx>=1.8*A.op.length)?' (casi el doble)':'';
+    h+='<div class="lead"><b>'+A.pacOp+' de '+A.pacTot+' pacientes ya se operaron.</b> Pero <b>'+ab+' siguen abiertos</b>: no son un «no», son un «todavía no». Si la mitad de ellos entra a pabellón, su conversión sube a <b>'+projConv+'%</b> y su volumen quirúrgico pasa de <b>'+A.op.length+'</b> a cerca de <b>'+projCx+'</b> cirugías'+dup+' — sin invertir un peso en marketing.</div>';
+  }
   const R=[];
-  if(ab>0) R.push(['🎯','<b>'+ab+' pacientes suyos ya cotizaron y aún no operan.</b> Cada uno es una cirugía posible: con un buen seguimiento pueden concretarse y suben su conversión.']);
   if(A.nDur>0){
     if(Math.abs(A.deltaProm)<=10) R.push(['⏱','Su tiempo real y el cotizado casi coinciden ('+varTxt+' en total). Esa precisión mantiene su pabellón disponible cuando lo necesita y evita cobros de tiempo adicional a sus pacientes.']);
     else if(A.deltaProm>10) R.push(['⏱','Sus cirugías tienden a durar más de lo cotizado (+'+A.deltaProm+' min en promedio). Ajustar el tiempo cotizado le asegura pabellón disponible y le evita cobros de tiempo adicional a sus pacientes.']);
     else R.push(['⏱','Suele terminar antes de lo cotizado. Cotizar el tiempo justo libera pabellón para más cirugías suyas.']);
   }
-  R.push(['📦','Cuando la ficha base de cada cirugía ya incluye lo que usted usa siempre, su paciente no recibe sorpresas en la cuenta y usted cotiza con más certeza. Trabajemos juntos esas fichas.']);
-  R.push(['🤝','En <b>Santiago Medical Institute</b> queremos que opere más y mejor: pabellón a tiempo, insumos previstos y seguimiento cercano de sus pacientes.']);
-  return R.map(r=>'<div class="rec"><span class="ic">'+r[0]+'</span><span>'+r[1]+'</span></div>').join('');
+  R.push(['📦','Cuando la ficha base de cada cirugía ya incluye lo que usa siempre, su paciente no recibe sorpresas en la cuenta y las cotizaciones ganan certeza. Trabajemos juntos esas fichas.']);
+  R.push(['🤝','Nosotros nos hacemos cargo de todo lo que hay entre la cotización y el alta, y le devolvemos el dato para que su consulta crezca. En <b>Santiago Medical Institute</b> queremos que opere más y mejor: pabellón a tiempo, insumos previstos y seguimiento cercano de sus pacientes.']);
+  h+=R.map(r=>'<div class="rec"><span class="ic">'+r[0]+'</span><span>'+r[1]+'</span></div>').join('');
+  return h;
 }
 
 /* ---- valor + recomendaciones (ojos de SMI) ---- */
