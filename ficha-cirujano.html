@@ -258,7 +258,11 @@ function analizar(datos){
       Object.entries(c.items).forEach(([d,n])=>f.items[d]=(f.items[d]||0)+n); }); });
   const extPct=montoOpTot?Math.round(extTot/montoOpTot*100):0;
 
-  return {datos,months,op,conv,conv6,pacTot,pacOp,pacPerd,pacRes,convAll,mix,hCotTot,hRealTot,nDur,nExc,deltaProm,extTot,extPct,ext,montoOpTot};
+  // cirugías con cargo de tiempo adicional (MISMA fuente que la lista de extras, para que cuadre)
+  let cxTiempoExtra=0;
+  Object.values(ext).forEach(e=>{ if(e.fam['Tiempo adicional']) cxTiempoExtra+=e.fam['Tiempo adicional'].casos; });
+
+  return {datos,months,op,conv,conv6,pacTot,pacOp,pacPerd,pacRes,convAll,mix,hCotTot,hRealTot,nDur,nExc,deltaProm,extTot,extPct,ext,montoOpTot,cxTiempoExtra};
 }
 
 /* ---- matriz de conversión de una fila (por mes, con flecha) ---- */
@@ -423,11 +427,13 @@ function render(nom,A){
   let b='';
   b+='<div class="card hh"><h2>Flujo de sus pacientes</h2>'+funnel(A)+'</div>';
   b+='<div class="card hh"><h2>Su conversión</h2><div class="sub" style="margin-bottom:8px">De los pacientes que cotizó cada mes, cuántos operaron (por RUT)</div>'+convRow(A)+'</div>';
+  const conT=A.cxTiempoExtra, sinT=Math.max(0,A.op.length-conT);
   b+='<div class="card hh"><h2>Su gestión del tiempo de pabellón</h2><div class="eff">'
     +'<div class="b"><div class="mp">Horas que solicita</div><div class="big-num">'+h1dec(A.hCotTot)+' h</div></div>'
     +'<div class="b"><div class="mp">Horas que usa</div><div class="big-num">'+h1dec(A.hRealTot)+' h</div></div>'
-    +'<div class="b"><div class="mp">En promedio</div><div class="big-num '+(A.deltaProm>0?'neg':'pos')+'">'+(A.deltaProm>0?'+':'')+A.deltaProm+' min</div></div>'
-    +'</div><div class="mp" style="margin-top:8px">Cotizar el tiempo lo más real posible ayuda a que su pabellón esté disponible cuando lo necesita y evita cobros de tiempo adicional a sus pacientes.</div></div>';
+    +'<div class="b"><div class="mp">Cirugías sin tiempo extra</div><div class="big-num pos">'+sinT+'</div></div>'
+    +'<div class="b"><div class="mp">Cirugías con tiempo extra</div><div class="big-num">'+conT+'</div></div>'
+    +'</div><div class="mp" style="margin-top:8px">De sus <b>'+A.op.length+'</b> cirugías, en <b>'+sinT+'</b> el tiempo cotizado alcanzó y en <b>'+conT+'</b> se necesitó tiempo adicional. En total usó <b>'+h1dec(A.hRealTot)+' h</b> de las <b>'+h1dec(A.hCotTot)+' h</b> que cotizó. Cotizar el tiempo lo más real posible mantiene su pabellón disponible y evita cobros de tiempo adicional a sus pacientes.</div></div>';
   b+='<div class="card hh"><h2>Sus cirugías más frecuentes en Santiago Medical Institute</h2><div class="sub" style="margin-bottom:8px">Las que más realiza aquí</div>'+topCirugias(A,3)+'</div>';
   b+='<div class="card hh"><h2>Sus extras más usados</h2><div class="sub" style="margin-bottom:8px">Los que más aparecen en el total de sus cirugías. La idea: que la ficha base de cada procedimiento ya los incluya, para que no salgan como extra ni como sorpresa en la cuenta de su paciente.</div>'+topExtras(A,5)+'</div>';
   b+='<div class="card hh"><h2>Por qué operar en Santiago Medical Institute</h2>'+valorCirujano(A)+'</div>';
