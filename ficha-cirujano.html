@@ -70,7 +70,9 @@ ol.rank li .num{color:var(--muted);font-weight:600;white-space:nowrap}
   *{-webkit-print-color-adjust:exact !important;print-color-adjust:exact !important}
   body{background:#fff}
   .wrap{max-width:100%;padding:0}
-  #login,#selCard,.top,.tabs,#paneSMI,#kpis,#vacio,.noprint{display:none !important}
+  #login,#selCard,.top,.tabs,#paneSMI,#vacio,.noprint{display:none !important}
+  #kpis .kInterno{display:none !important}
+  #kpis{margin-top:0 !important}
   #printHead{display:block !important;text-align:center;margin-bottom:10px;border-bottom:2px solid var(--deep);padding-bottom:10px}
   #phLogo{height:58px;margin:0 auto 6px}
   #printHead h1{font-family:'Cormorant Garamond',Georgia,serif;font-size:24px}
@@ -160,7 +162,7 @@ function grupoCx(nom){
   return nom||'—';
 }
 const FAM_ORDEN=['Tiempo adicional','Insumos','Suturas','Drogas anestésicas','Medicamentos','Sueros y fluidos','Exámenes de laboratorio','Hospitalización','Otros'];
-const FAM_OCULTA_CIR={'Drogas anestésicas':1};      // no se le muestra al cirujano (ventaja de SMI)
+const FAM_OCULTA_CIR={'Drogas anestésicas':1,'Tiempo adicional':1}; // no van al top-5 del cirujano: drogas = ventaja de SMI; tiempo = ya está en su tarjeta de gestión de tiempo
 // Agrupa cada extra en una familia (calibrado con el vocabulario real de extras_pabellon)
 function grupoExtra(desc,tipo){
   const s=((desc||'')+' '+(tipo||'')).toLowerCase().replace(/·/g,' ').replace(/\s+/g,' ');
@@ -328,6 +330,22 @@ function topExtras(A,k){
   return h+'</ol>';
 }
 
+/* ---- argumentos de valor para el cirujano (cierre del PDF) ---- */
+function valorCirujano(A){
+  const ab=A.pacTot-A.pacRes, varH=(A.hRealTot-A.hCotTot)/60;
+  const varTxt=(varH>=0?'+':'')+varH.toFixed(1).replace('.',',')+' h';
+  const R=[];
+  if(ab>0) R.push(['🎯','<b>'+ab+' pacientes suyos ya cotizaron y aún no operan.</b> Cada uno es una cirugía posible: con un buen seguimiento pueden concretarse y suben su conversión.']);
+  if(A.nDur>0){
+    if(Math.abs(A.deltaProm)<=10) R.push(['⏱','Su tiempo real y el cotizado casi coinciden ('+varTxt+' en total). Esa precisión mantiene su pabellón disponible cuando lo necesita y evita cobros de tiempo adicional a sus pacientes.']);
+    else if(A.deltaProm>10) R.push(['⏱','Sus cirugías tienden a durar más de lo cotizado (+'+A.deltaProm+' min en promedio). Ajustar el tiempo cotizado le asegura pabellón disponible y le evita cobros de tiempo adicional a sus pacientes.']);
+    else R.push(['⏱','Suele terminar antes de lo cotizado. Cotizar el tiempo justo libera pabellón para más cirugías suyas.']);
+  }
+  R.push(['📦','Cuando la ficha base de cada cirugía ya incluye lo que usted usa siempre, su paciente no recibe sorpresas en la cuenta y usted cotiza con más certeza. Trabajemos juntos esas fichas.']);
+  R.push(['🤝','En <b>Santiago Medical Institute</b> queremos que opere más y mejor: pabellón a tiempo, insumos previstos y seguimiento cercano de sus pacientes.']);
+  return R.map(r=>'<div class="rec"><span class="ic">'+r[0]+'</span><span>'+r[1]+'</span></div>').join('');
+}
+
 /* ---- valor + recomendaciones (ojos de SMI) ---- */
 function valorRec(A){
   const recs=[];
@@ -346,7 +364,7 @@ function valorRec(A){
   return h;
 }
 
-function kpiCard(lab,val,sub){ return '<div class="kpi"><div class="lab">'+lab+'</div><div class="val num">'+val+'</div><div class="sub">'+(sub||'')+'</div></div>'; }
+function kpiCard(lab,val,sub,cls){ return '<div class="kpi '+(cls||'')+'"><div class="lab">'+lab+'</div><div class="val num">'+val+'</div><div class="sub">'+(sub||'')+'</div></div>'; }
 
 function funnel(A){
   const op=A.pacOp, pe=A.pacPerd, ab=A.pacTot-A.pacRes, tot=A.pacTot||1;
@@ -369,8 +387,8 @@ function render(nom,A){
     kpiCard('Conversión',A.convAll+'%',A.pacOp+' de '+A.pacTot+' pacientes (RUT)')+
     kpiCard('Cotizaciones',A.datos.length,'folios (varios por paciente)')+
     kpiCard('Horas de pabellón',h1dec(A.hRealTot)+' h','usadas (real)')+
-    kpiCard('Monto operado',clpK(A.montoOpTot),'ingreso que trae')+
-    kpiCard('Extras cobradas',clpK(A.extTot),A.extPct+'% del operado');
+    kpiCard('Monto operado',clpK(A.montoOpTot),'ingreso que trae','kInterno')+
+    kpiCard('Extras cobradas',clpK(A.extTot),A.extPct+'% del operado','kInterno');
 
   // Pestaña A — ojos de SMI
   let a='';
@@ -398,6 +416,7 @@ function render(nom,A){
     +'</div><div class="mp" style="margin-top:8px">Cotizar el tiempo lo más real posible ayuda a que su pabellón esté disponible cuando lo necesita y evita cobros de tiempo adicional a sus pacientes.</div></div>';
   b+='<div class="card hh"><h2>Sus cirugías más frecuentes en Santiago Medical Institute</h2><div class="sub" style="margin-bottom:8px">Las tres que más realiza aquí</div>'+topCirugias(A,3)+'</div>';
   b+='<div class="card hh"><h2>Sus extras más usados</h2><div class="sub" style="margin-bottom:8px">Los que más aparecen en el total de sus cirugías. La idea: que la ficha base de cada procedimiento ya los incluya, para que no salgan como extra ni como sorpresa en la cuenta de su paciente.</div>'+topExtras(A,5)+'</div>';
+  b+='<div class="card hh"><h2>Por qué operar en Santiago Medical Institute</h2>'+valorCirujano(A)+'</div>';
   $('paneCir').innerHTML=b;
 
   $('phLogo').src=SMI_LOGO;
