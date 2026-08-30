@@ -43,7 +43,14 @@ td:first-child,th:first-child{text-align:left;font-weight:600}
 .cxf{font-size:10.5px;color:var(--faint);font-weight:400}
 .cxtr{font-size:9px;color:var(--ink);vertical-align:1px}
 .chip{display:inline-block;font-size:11px;font-weight:700;padding:2px 9px;border-radius:20px;background:var(--tint);color:var(--deep)}
-.lead{background:var(--tint);border-left:4px solid var(--deep);border-radius:8px;padding:12px 14px;font-size:14.5px;line-height:1.55;margin-bottom:10px;-webkit-print-color-adjust:exact;print-color-adjust:exact}
+.lead{background:var(--tint);border-left:4px solid var(--deep);border-radius:8px;padding:12px 14px;font-size:14px;line-height:1.55;margin-bottom:6px;-webkit-print-color-adjust:exact;print-color-adjust:exact}
+.lead .vhead{font-family:'Cormorant Garamond',Georgia,serif;font-size:17px;font-weight:700;color:var(--deep);margin-bottom:6px}
+.lead p{margin:0 0 6px}
+.lead p:last-child{margin-bottom:0}
+.vsec{padding:13px 0;border-top:1px solid var(--line)}
+.vsec h3{font-family:'Cormorant Garamond',Georgia,serif;font-size:16.5px;font-weight:700;color:var(--deep);margin:0 0 5px}
+.vsec p{margin:0 0 6px;font-size:13.5px;line-height:1.55}
+.vsec p:last-child{margin-bottom:0}
 .rec{display:flex;gap:9px;align-items:flex-start;padding:9px 0;border-top:1px solid var(--line);font-size:13.5px}
 .rec:first-child{border-top:0}
 .rec .ic{font-size:16px;line-height:1.2}
@@ -341,28 +348,48 @@ function topExtras(A,k){
 
 /* ---- argumentos de valor para el cirujano (cierre del PDF) ---- */
 function valorCirujano(A){
-  const ab=A.pacTot-A.pacRes, varH=(A.hRealTot-A.hCotTot)/60;
-  const varTxt=(varH>=0?'+':'')+varH.toFixed(1).replace('.',',')+' h';
+  const ab=A.pacTot-A.pacRes;
+  const conT=A.cxTiempoExtra, totCx=A.op.length;
   let h='';
-  // Titular: proyección de oportunidad, calculada con los datos del cirujano
+
+  // 1. Oportunidad — calculada con los datos del cirujano
   if(ab>0){
-    const mitad=Math.round(ab/2), projOp=A.pacOp+mitad;
-    const projConv=A.pacTot?Math.round(projOp/A.pacTot*100):0;
-    const projCx=A.pacOp>0? A.op.length+Math.round(mitad*A.op.length/A.pacOp) : A.op.length+mitad;
-    const dup=(A.op.length>0 && projCx>=1.8*A.op.length)?' (casi el doble)':'';
-    h+='<div class="lead"><b>'+A.pacOp+' de '+A.pacTot+' pacientes ya se operaron.</b> Pero <b>'+ab+' siguen abiertos</b>: no son un «no», son un «todavía no». Si la mitad de ellos entra a pabellón, su conversión sube a <b>'+projConv+'%</b> y su volumen quirúrgico pasa de <b>'+A.op.length+'</b> a cerca de <b>'+projCx+'</b> cirugías'+dup+'.</div>';
+    const mitad=Math.round(ab/2), projConv=A.pacTot?Math.round((A.pacOp+mitad)/A.pacTot*100):0, projCx=A.op.length+mitad;
+    h+='<div class="lead"><div class="vhead">Hay oportunidades que todavía pueden convertirse en cirugía</div>'
+      +'<p><b>'+A.pacOp+' de '+A.pacTot+' pacientes</b> ya se operaron.</p>'
+      +'<p>Y hay <b>'+ab+' paciente'+(ab===1?'':'s')+'</b> que continúa'+(ab===1?'':'n')+' abierto'+(ab===1?'':'s')+': no son pacientes perdidos, sino oportunidades que aún pueden convertirse.</p>'
+      +'<p>Si logramos recuperar solo la mitad de ellos, su conversión podría llegar aproximadamente al <b>'+projConv+'%</b>, llevando su actividad de <b>'+A.op.length+'</b> a cerca de <b>'+projCx+'</b> cirugías.</p>'
+      +'<p>Nuestro objetivo no es solo recibir sus cirugías. Es ayudarlo a que más de sus pacientes lleguen efectivamente a pabellón.</p></div>';
   }
-  const R=[];
-  R.push(['🛡️','Opera con un <b>equipo afiatado</b> —anestesia, arsenalería y recuperación que ya conocen su forma de trabajar— en una <b>infraestructura acreditada</b>. Menos improvisación y más seguridad para su paciente y para usted.']);
-  if(A.nDur>0){
-    if(Math.abs(A.deltaProm)<=10) R.push(['⏱','Su tiempo real y el cotizado casi coinciden ('+varTxt+' en total). Esa precisión mantiene su pabellón disponible cuando lo necesita y evita cobros de tiempo adicional a sus pacientes.']);
-    else if(A.deltaProm>10) R.push(['⏱','Sus cirugías tienden a durar más de lo cotizado (+'+A.deltaProm+' min en promedio). Ajustar el tiempo cotizado le asegura pabellón disponible y le evita cobros de tiempo adicional a sus pacientes.']);
-    else R.push(['⏱','Suele terminar antes de lo cotizado. Cotizar el tiempo justo libera pabellón para más cirugías suyas.']);
+
+  const S=[];
+  S.push(['🛡️ Un equipo que ya conoce su forma de operar',
+    ['Anestesia, arsenalería, enfermería y recuperación trabajando coordinadamente y familiarizados con su práctica.',
+     'Menos variables el día de la cirugía, mayor continuidad del equipo y una experiencia más segura y predecible tanto para usted como para su paciente.']]);
+  if(totCx>0){
+    if(conT>0){
+      S.push(['⏱ Un punto para mejorar juntos: sus tiempos adicionales',
+        ['De sus <b>'+totCx+'</b> cirugías, <b>'+conT+'</b> necesitaron extender su tiempo de pabellón.',
+         'Reducir esos tiempos adicionales es algo que podemos trabajar juntos: cotizar el tiempo lo más real posible mantiene su pabellón disponible para su agenda y evita cobros de tiempo adicional a sus pacientes.']]);
+    } else {
+      S.push(['⏱ Un pabellón que respeta su tiempo',
+        ['Ninguna de sus cirugías necesitó extender su tiempo de pabellón: su planificación es muy precisa.',
+         'Eso mantiene su pabellón disponible para su agenda y evita cobros de tiempo adicional a sus pacientes.']]);
+    }
   }
-  R.push(['📦','Cuando la ficha base de cada cirugía ya incluye lo que usa siempre, su paciente no recibe sorpresas en la cuenta y las cotizaciones ganan certeza. Trabajemos juntos esas fichas.']);
-  R.push(['📊','Esta ficha es parte de lo que le ofrecemos: sus propios datos —conversión, tiempos, insumos y pacientes abiertos— ordenados para que vea dónde enfocarse. <b>Sin información no hay foco en lo que se puede mejorar.</b>']);
-  R.push(['🤝','Nosotros nos hacemos cargo de todo lo que hay entre la cotización y el alta, y le devolvemos el dato para que su consulta crezca. En <b>Santiago Medical Institute</b> queremos que opere más y mejor: pabellón a tiempo, insumos previstos y seguimiento cercano de sus pacientes.']);
-  h+=R.map(r=>'<div class="rec"><span class="ic">'+r[0]+'</span><span>'+r[1]+'</span></div>').join('');
+  S.push(['📦 Cotizaciones más precisas, menos sorpresas para el paciente',
+    ['Queremos construir junto a usted una ficha base para cada una de sus cirugías habituales, incorporando desde el inicio los insumos y requerimientos que utiliza regularmente.',
+     'El resultado: cotizaciones más precisas, preparación más eficiente del pabellón y mayor certeza para el paciente desde el momento en que decide operarse.']]);
+  S.push(['📊 Sus datos, convertidos en información para su práctica',
+    ['Este informe es parte de nuestra propuesta de valor.',
+     'Conversión de pacientes, tiempos quirúrgicos, utilización de pabellón, insumos y pacientes que aún no se han operado, organizados para identificar oportunidades concretas de mejora.',
+     'Porque cuando la información está disponible, es más fácil saber dónde actuar.']]);
+  S.push(['🤝 Usted se concentra en operar; nosotros, en que todo lo demás funcione',
+    ['Desde la cotización y coordinación del paciente hasta el pabellón, los insumos, la recuperación y el seguimiento administrativo.',
+     'Y además, le devolvemos información sobre su propia actividad para ayudarlo a tomar mejores decisiones.',
+     'En <b>Santiago Medical Institute</b> queremos ser más que el lugar donde usted opera: queremos ser el equipo que lo ayuda a operar más, con mayor eficiencia y con una mejor experiencia para sus pacientes.']]);
+
+  h+=S.map(s=>'<div class="vsec"><h3>'+s[0]+'</h3>'+s[1].map(p=>'<p>'+p+'</p>').join('')+'</div>').join('');
   return h;
 }
 
