@@ -7,7 +7,8 @@
 <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:wght@500;600;700&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
 <style>
 :root{--crimson:#CD1D52;--bright:#E33C3B;--deep:#B22030;--ink:#1C1719;--muted:#857479;--faint:#A99CA0;
-  --bg:#FAF7F6;--card:#FFFFFF;--line:#ECE0E2;--tint:#F7F0F1;--pos:#1f8a52;--neg:#C1453A;--warn:#B7791F;}
+  --bg:#FAF7F6;--card:#FFFFFF;--line:#ECE0E2;--tint:#F7F0F1;--pos:#1f8a52;--neg:#C1453A;--warn:#B7791F;
+  --fOp:#22A44B;--fPe:#1B75BB;--fAb:#F5A623;}
 *{box-sizing:border-box}
 body{margin:0;background:var(--bg);color:var(--ink);font-family:Inter,system-ui,sans-serif;line-height:1.5}
 .wrap{max-width:1000px;margin:0 auto;padding:18px 16px 60px}
@@ -56,6 +57,17 @@ td:first-child,th:first-child{text-align:left;font-weight:600}
 .fleg .dot{display:inline-block;width:11px;height:11px;border-radius:3px;margin-right:6px;vertical-align:-1px}
 .mp{color:var(--muted);font-size:13px}
 .hh h2{margin-bottom:2px}
+#printHead{display:none}
+@media print{
+  body{background:#fff}
+  .wrap{max-width:100%;padding:0}
+  #login,#selCard,.top,.tabs,#paneSMI,#kpis,#vacio,.noprint{display:none !important}
+  #printHead{display:block !important;margin-bottom:6px;border-bottom:2px solid var(--deep);padding-bottom:8px}
+  #printHead h1{font-family:'Cormorant Garamond',Georgia,serif;font-size:26px}
+  #paneCir,#paneCir.hidden{display:block !important}
+  #paneCir .card{margin-top:12px;break-inside:avoid;border-color:#ddd}
+  @page{margin:14mm}
+}
 </style>
 </head>
 <body>
@@ -74,10 +86,18 @@ td:first-child,th:first-child{text-align:left;font-weight:600}
         <h1 style="color:var(--deep)">Ficha del Cirujano</h1>
         <div class="sub">Datos reales del OR System · totales del cirujano</div>
       </div>
-      <div class="who">Sesión: <strong id="whoTxt" style="color:var(--ink)">—</strong></div>
+      <div style="display:flex;align-items:center;gap:14px">
+        <button class="btn noprint hidden" id="btnPdf" style="padding:9px 14px;font-size:13px">⬇ Descargar PDF</button>
+        <div class="who">Sesión: <strong id="whoTxt" style="color:var(--ink)">—</strong></div>
+      </div>
     </div>
 
-    <div class="card">
+    <div id="printHead">
+      <h1 id="phName" style="color:var(--deep);margin:0">—</h1>
+      <div class="sub" id="phMeta">Santiago Medical Institute</div>
+    </div>
+
+    <div class="card" id="selCard">
       <label class="sub" style="font-weight:600">Seleccione un cirujano</label>
       <select id="selCir" style="margin-top:6px"></select>
     </div>
@@ -149,7 +169,7 @@ $('clave').addEventListener('keydown',e=>{ if(e.key==='Enter') entrar(); });
 
 async function cargarCir(){
   const nom=$('selCir').value;
-  if(!nom){ $('cont').classList.add('hidden'); $('vacio').textContent=''; return; }
+  if(!nom){ $('cont').classList.add('hidden'); $('vacio').textContent=''; $('btnPdf').classList.add('hidden'); return; }
   $('vacio').textContent='Cargando…'; $('cont').classList.add('hidden');
   try{
     const r=await rpc('smi_ficha_cirujano',{p_clave:CLAVE,p_cirujano:nom});
@@ -172,13 +192,14 @@ function analizar(datos){
   datos.forEach(x=>{ const k=pacKey(x); const p=pac[k]||(pac[k]={mesMin:null,op:false,perd:false,open:false});
     const mk=mKey(x.creada_en); if(mk&&(!p.mesMin||mk<p.mesMin))p.mesMin=mk;
     if(x.estado==='operada')p.op=true; else if(x.estado==='perdida')p.perd=true; else p.open=true; });
-  const conv={}; months.forEach(k=>conv[k]={op:0,res:0});
-  Object.values(pac).forEach(p=>{ const c=p.op, lost=!p.op&&p.perd&&!p.open; if(!c&&!lost)return;
-    if(!conv[p.mesMin])return; conv[p.mesMin].res++; if(c)conv[p.mesMin].op++; });
-  const conv6=(()=>{let o=0,r=0;months.forEach(k=>{o+=conv[k].op;r+=conv[k].res;});return r?Math.round(o/r*100):0;})();
+  // Conversión = operados / TODOS los RUT solicitantes del mes (incl. abiertos)
+  const conv={}; months.forEach(k=>conv[k]={op:0,tot:0});
+  Object.values(pac).forEach(p=>{ if(!conv[p.mesMin])return; conv[p.mesMin].tot++; if(p.op)conv[p.mesMin].op++; });
+  const conv6=(()=>{let o=0,t=0;months.forEach(k=>{o+=conv[k].op;t+=conv[k].tot;});return t?Math.round(o/t*100):0;})();
   const pacTot=Object.keys(pac).length, pacOp=Object.values(pac).filter(p=>p.op).length;
   const pacPerd=Object.values(pac).filter(p=>!p.op&&p.perd&&!p.open).length;
-  const pacRes=pacOp+pacPerd, convAll=pacRes?Math.round(pacOp/pacRes*100):0;
+  const pacRes=pacOp+pacPerd;
+  const convAll=pacTot?Math.round(pacOp/pacTot*100):0; // sobre RUT solicitantes
 
   // Mix por categoria (volumen por folio + conversion por paciente dentro de la categoria)
   const mix={};
@@ -207,7 +228,7 @@ function analizar(datos){
 /* ---- matriz de conversión de una fila (por mes, con flecha) ---- */
 function convRow(A){
   const bg=p=>p==null?'':'background:hsl('+Math.round(p*1.2)+',62%,90%)';
-  const ps=A.months.map(k=>{ const c=A.conv[k]; return c.res?{p:Math.round(c.op/c.res*100),op:c.op,res:c.res}:null; });
+  const ps=A.months.map(k=>{ const c=A.conv[k]; return c.tot?{p:Math.round(c.op/c.tot*100),op:c.op,res:c.tot}:null; });
   let h='<div class="wx"><table><tr>';
   A.months.forEach(k=>h+='<th>'+mShort(k)+'</th>'); h+='<th>6 meses</th></tr><tr>';
   ps.forEach((cur,i)=>{ if(!cur){ h+='<td><span class="cxf">—</span></td>'; return; }
@@ -223,7 +244,7 @@ function mixTable(A){
   const arr=Object.entries(A.mix).sort((a,b)=>b[1].op-a[1].op);
   let h='<div class="wx"><table><tr><th>Categoría</th><th>Operadas</th><th>Conv. pac.</th><th>Ticket prom.</th><th>Horas cot.→real</th></tr>';
   arr.forEach(([k,v],i)=>{
-    let po=0,pr=0; Object.values(v.pac).forEach(p=>{ const c=p.op, l=!p.op&&p.perd&&!p.open; if(c||l){pr++; if(c)po++;} });
+    let po=0,pr=0; Object.values(v.pac).forEach(p=>{ pr++; if(p.op)po++; });
     const cv=pr?Math.round(po/pr*100):null;
     const tk=v.op?clpK(v.montoOp/v.op):'—';
     const hc=v.nDur?(h1dec(v.hCot/v.nDur)+'→'+h1dec(v.hReal/v.nDur)+' h'):'—';
@@ -253,14 +274,14 @@ function valorRec(A){
   const recs=[];
   if(A.deltaProm>15) recs.push(['⏱','Sus cirugías <b>exceden en promedio '+A.deltaProm+' min</b> lo cotizado ('+A.nExc+' de '+A.nDur+'). Conviene ajustar las horas cotizadas o revisar la planificación de pabellón.']);
   else if(A.deltaProm< -10) recs.push(['⏱','Termina <b>'+Math.abs(A.deltaProm)+' min antes</b> de lo cotizado en promedio — buena gestión del pabellón.']);
-  if(A.conv6<40 && A.op.length>0) recs.push(['📉','Conversión de 6 meses baja (<b>'+A.conv6+'%</b>). Reforzar el seguimiento comercial de sus cotizaciones.']);
-  if(A.conv6>=65 && A.op.length>=5) recs.push(['⭐','Alto valor: opera <b>'+A.op.length+' cirugías</b> con <b>'+A.conv6+'%</b> de conversión — cirujano clave para SMI.']);
+  if(A.conv6<25 && A.op.length>0) recs.push(['📉','Conversión de 6 meses baja (<b>'+A.conv6+'%</b> de sus solicitantes). Reforzar el seguimiento comercial de sus cotizaciones.']);
+  if(A.conv6>=45 && A.op.length>=5) recs.push(['⭐','Alto valor: opera <b>'+A.op.length+' cirugías</b> con <b>'+A.conv6+'%</b> de conversión — cirujano clave para SMI.']);
   if(A.extPct>12) recs.push(['📦','Los extras son el <b>'+A.extPct+'%</b> del monto operado. Revisar si los insumos habituales deberían ir en la ficha base (menos sorpresas, mejor cotización).']);
   if(!recs.length) recs.push(['✓','Comportamiento dentro de lo esperado. Sin alertas.']);
   // score simple
   let score='Medio', cls='warn';
-  if(A.op.length>=5 && A.conv6>=60){ score='Alto valor'; cls='pos'; }
-  else if(A.op.length<2 || A.conv6<35){ score='A observar'; cls='neg'; }
+  if(A.op.length>=5 && A.conv6>=40){ score='Alto valor'; cls='pos'; }
+  else if(A.op.length<2 || A.conv6<20){ score='A observar'; cls='neg'; }
   let h='<div style="display:flex;align-items:baseline;gap:12px;margin-bottom:8px"><span class="big-num '+cls+'">'+score+'</span><span class="mp">score compuesto: volumen + conversión + eficiencia de tiempo</span></div>';
   h+=recs.map(r=>'<div class="rec"><span class="ic">'+r[0]+'</span><span>'+r[1]+'</span></div>').join('');
   return h;
@@ -270,14 +291,15 @@ function kpiCard(lab,val,sub){ return '<div class="kpi"><div class="lab">'+lab+'
 
 function funnel(A){
   const op=A.pacOp, pe=A.pacPerd, ab=A.pacTot-A.pacRes, tot=A.pacTot||1;
-  const seg=(n,c,lab)=> n>0?'<div style="width:'+(n/tot*100).toFixed(1)+'%;background:'+c+'" title="'+lab+': '+n+'">'+n+'</div>':'';
+  const seg=(n,c,txt,lab)=> n>0?'<div style="width:'+(n/tot*100).toFixed(1)+'%;background:'+c+';color:'+txt+'" title="'+lab+': '+n+'">'+n+'</div>':'';
   let h='<div class="sub" style="margin-bottom:2px">'+A.datos.length+' cotizaciones  →  <b>'+A.pacTot+' pacientes</b> distintos (RUT)</div>';
-  h+='<div class="funnel">'+seg(op,'#1f8a52','Operaron')+seg(pe,'#C1453A','Desistieron')+seg(ab,'#B7791F','Abiertos')+'</div>';
+  h+='<div class="funnel">'+seg(op,'var(--fOp)','#fff','Operaron')+seg(ab,'var(--fAb)','#4a3800','Abiertos')+seg(pe,'var(--fPe)','#fff','Desistieron')+'</div>';
   h+='<div class="fleg">'
-    +'<span><span class="dot" style="background:#1f8a52"></span>Operaron <b>'+op+'</b> ('+A.op.length+' cirugías)</span>'
-    +'<span><span class="dot" style="background:#C1453A"></span>Desistieron <b>'+pe+'</b></span>'
-    +'<span><span class="dot" style="background:#B7791F"></span>Abiertos <b>'+ab+'</b> · aún pueden operar</span></div>';
-  h+='<div class="sub" style="margin-top:9px">Conversión: <b>'+op+' de '+A.pacRes+' resueltos = '+A.convAll+'%</b>. Los '+ab+' abiertos todavía no cuentan — pueden subir la conversión al cerrarse.</div>';
+    +'<span><span class="dot" style="background:var(--fOp)"></span>Operaron <b>'+op+'</b> ('+A.op.length+' cirugías)</span>'
+    +'<span><span class="dot" style="background:var(--fAb)"></span>Abiertos <b>'+ab+'</b> · aún pueden operar</span>'
+    +'<span><span class="dot" style="background:var(--fPe)"></span>Desistieron <b>'+pe+'</b></span></div>';
+  h+='<div class="sub" style="margin-top:9px">Conversión: <b>'+op+' de '+A.pacTot+' pacientes que cotizaron = '+A.convAll+'%</b>.'
+    +(ab>0?' Hay <b>'+ab+' abiertos</b> aún en juego — al concretarse pueden subir esta conversión.':'')+'</div>';
   return h;
 }
 
@@ -285,7 +307,7 @@ function render(nom,A){
   $('kpis').innerHTML=
     kpiCard('Pacientes',A.pacTot,'distintos (RUT)')+
     kpiCard('Cirugías operadas',A.op.length,'en '+A.pacOp+' pacientes')+
-    kpiCard('Conversión',A.convAll+'%',A.pacOp+' de '+A.pacRes+' resueltos')+
+    kpiCard('Conversión',A.convAll+'%',A.pacOp+' de '+A.pacTot+' pacientes (RUT)')+
     kpiCard('Cotizaciones',A.datos.length,'folios (varios por paciente)')+
     kpiCard('Horas de pabellón',h1dec(A.hRealTot)+' h','usadas (real)')+
     kpiCard('Monto operado',clpK(A.montoOpTot),'ingreso que trae')+
@@ -294,7 +316,7 @@ function render(nom,A){
   // Pestaña A — ojos de SMI
   let a='';
   a+='<div class="card hh"><h2>Flujo de pacientes</h2>'+funnel(A)+'</div>';
-  a+='<div class="card hh"><h2>Conversión mensual</h2><div class="sub" style="margin-bottom:8px">Por paciente (RUT) · mes de su 1ª cotización · ▲▼ vs mes anterior</div>'+convRow(A)+'</div>';
+  a+='<div class="card hh"><h2>Conversión mensual</h2><div class="sub" style="margin-bottom:8px">Operados ÷ RUT que cotizaron ese mes · ▲▼ vs mes anterior · el mes en curso es provisional (aún deciden)</div>'+convRow(A)+'</div>';
   a+='<div class="card hh"><h2>Mix de cirugías</h2><div class="sub" style="margin-bottom:8px">Agrupadas por categoría (Rino, Mama, Lipo, Lifting…)</div>'+mixTable(A)+'</div>';
   a+='<div class="card hh"><h2>Eficiencia de pabellón</h2><div class="eff">'
     +'<div class="b"><div class="mp">Horas que solicita</div><div class="big-num">'+h1dec(A.hCotTot)+' h</div></div>'
@@ -317,7 +339,17 @@ function render(nom,A){
     +'</div><div class="mp" style="margin-top:8px">Cotizar el tiempo lo más real posible ayuda a que su pabellón esté disponible cuando lo necesita y evita cobros de tiempo adicional a sus pacientes.</div></div>';
   b+='<div class="card hh"><h2>Transparencia de extras</h2><div class="sub" style="margin-bottom:8px">Lo que se cobró en sus casos, por cirugía</div>'+extrasHab(A)+'</div>';
   $('paneCir').innerHTML=b;
+
+  $('phName').textContent=nom;
+  $('phMeta').innerHTML='Santiago Medical Institute · Ficha del cirujano · generada el '+fechaHoy();
+  $('btnPdf').classList.remove('hidden');
 }
+
+function fechaHoy(){
+  const d=new Date(), ms=['enero','febrero','marzo','abril','mayo','junio','julio','agosto','septiembre','octubre','noviembre','diciembre'];
+  return d.getDate()+' de '+ms[d.getMonth()]+' de '+d.getFullYear();
+}
+$('btnPdf').onclick=()=>window.print();
 
 document.querySelector('.tabs').addEventListener('click',e=>{
   const t=e.target.closest('.tab'); if(!t) return;
