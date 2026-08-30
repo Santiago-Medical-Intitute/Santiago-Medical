@@ -164,7 +164,7 @@ function grupoCx(nom){
   return nom||'—';
 }
 const FAM_ORDEN=['Tiempo adicional','Insumos','Suturas','Drogas anestésicas','Medicamentos','Sueros y fluidos','Exámenes de laboratorio','Hospitalización','Otros'];
-const FAM_OCULTA_CIR={'Drogas anestésicas':1,'Tiempo adicional':1}; // no van al top-5 del cirujano: drogas = ventaja de SMI; tiempo = ya está en su tarjeta de gestión de tiempo
+const FAM_OCULTA_CIR={'Drogas anestésicas':1}; // solo se oculta drogas anestésicas (ventaja de SMI); tiempo adicional SÍ va en la lista de extras (pedido de Gonzalo)
 const NO_CIRUGIA=/transfusi[oó]n|consulta|control|curaci[oó]n|sesi[oó]n|honorario|derecho|arancel/i; // NO son cirugías: fuera del ranking "sus cirugías más frecuentes"
 // Agrupa cada extra en una familia (calibrado con el vocabulario real de extras_pabellon)
 function grupoExtra(desc,tipo){
@@ -346,7 +346,7 @@ function valorCirujano(A){
     const projConv=A.pacTot?Math.round(projOp/A.pacTot*100):0;
     const projCx=A.pacOp>0? A.op.length+Math.round(mitad*A.op.length/A.pacOp) : A.op.length+mitad;
     const dup=(A.op.length>0 && projCx>=1.8*A.op.length)?' (casi el doble)':'';
-    h+='<div class="lead"><b>'+A.pacOp+' de '+A.pacTot+' pacientes ya se operaron.</b> Pero <b>'+ab+' siguen abiertos</b>: no son un «no», son un «todavía no». Si la mitad de ellos entra a pabellón, su conversión sube a <b>'+projConv+'%</b> y su volumen quirúrgico pasa de <b>'+A.op.length+'</b> a cerca de <b>'+projCx+'</b> cirugías'+dup+' — sin invertir un peso en marketing.</div>';
+    h+='<div class="lead"><b>'+A.pacOp+' de '+A.pacTot+' pacientes ya se operaron.</b> Pero <b>'+ab+' siguen abiertos</b>: no son un «no», son un «todavía no». Si la mitad de ellos entra a pabellón, su conversión sube a <b>'+projConv+'%</b> y su volumen quirúrgico pasa de <b>'+A.op.length+'</b> a cerca de <b>'+projCx+'</b> cirugías'+dup+'.</div>';
   }
   const R=[];
   if(A.nDur>0){
