@@ -71,7 +71,6 @@ ol.rank li .num{color:var(--muted);font-weight:600;white-space:nowrap}
   body{background:#fff}
   .wrap{max-width:100%;padding:0}
   #login,#selCard,.top,.tabs,#paneSMI,#vacio,.noprint{display:none !important}
-  #kpis .kInterno{display:none !important}
   #kpis{margin-top:0 !important}
   #printHead{display:block !important;text-align:center;margin-bottom:10px;border-bottom:2px solid var(--deep);padding-bottom:10px}
   #phLogo{height:58px;margin:0 auto 6px}
@@ -386,9 +385,7 @@ function render(nom,A){
     kpiCard('Cirugías operadas',A.op.length,'en '+A.pacOp+' pacientes')+
     kpiCard('Conversión',A.convAll+'%',A.pacOp+' de '+A.pacTot+' pacientes (RUT)')+
     kpiCard('Cotizaciones',A.datos.length,'folios (varios por paciente)')+
-    kpiCard('Horas de pabellón',h1dec(A.hRealTot)+' h','usadas (real)')+
-    kpiCard('Monto operado',clpK(A.montoOpTot),'ingreso que trae','kInterno')+
-    kpiCard('Extras cobradas',clpK(A.extTot),A.extPct+'% del operado','kInterno');
+    kpiCard('Horas de pabellón',h1dec(A.hRealTot)+' h','usadas (real)');
 
   // Pestaña A — ojos de SMI
   let a='';
