@@ -149,15 +149,18 @@ function grupoCx(nom){
   if(/gluteo/.test(s)) return 'Glúteos';
   return nom||'—';
 }
-const FAM_ORDEN=['Tiempo adicional','Insumos','Suturas','Drogas anestésicas','Medicamentos','Otros'];
-// Agrupa cada extra en una familia (para no listar ítem por ítem)
+const FAM_ORDEN=['Tiempo adicional','Insumos','Suturas','Drogas anestésicas','Medicamentos','Sueros y fluidos','Exámenes de laboratorio','Hospitalización','Otros'];
+// Agrupa cada extra en una familia (calibrado con el vocabulario real de extras_pabellon)
 function grupoExtra(desc,tipo){
-  const s=((desc||'')+' '+(tipo||'')).toLowerCase();
-  if(/tiempo|adicional|prolong|excedent|\bmin\b|minuto|hora extra|sobretiempo/.test(s)) return 'Tiempo adicional';
-  if(/propofol|sevofl|sevor|remifen|fentan|rocuron|vecuron|cisatra|midazol|lidoca|bupiva|ropiva|levobupi|ketamin|efedrin|neostigm|atropin|dexmedet|sugammad|anestes|sedaci|halogena|oxido nitroso/.test(s)) return 'Drogas anestésicas';
-  if(/sutura|vicryl|monocryl|prolene|nylon|nailon|\bseda\b|\bpds\b|catgut|grapa|stapler|\bhilo|monofil|poliglactin/.test(s)) return 'Suturas';
-  if(/dexametason|ondansetr|ketorol|ketoprof|metamizol|dipiron|paracetam|tramadol|morfin|omepraz|ranitid|cefazol|cefazolin|clindam|antibi|dexketo|profenid|nausea|antiemet|analg|dorixin|zofran|toradol|heparin|enoxapar|clexane|tranexam|corticoid|suero|fisiolog|ringer/.test(s)) return 'Medicamentos';
-  if(/gasa|compresa|jeringa|aguja|guante|apósito|aposito|venda|steri|electrodo|bistur|hoja|sonda|cateter|catéter|catet|drenaj|mascarilla|circuito|tegaderm|malla|implante|expansor|protesis|prótesis|canula|cánula|lipo|liposuc|equipo|\bset\b|\bkit\b|adhesiv|\btela\b|faja|vendaje|marcador|campo|tubo|conector|filtro/.test(s)) return 'Insumos';
+  const s=((desc||'')+' '+(tipo||'')).toLowerCase().replace(/·/g,' ').replace(/\s+/g,' ');
+  if(/tiempo|adicional|excedid|prolong|sobretiempo/.test(s)) return 'Tiempo adicional';
+  if(/biopsia|hemoglob|hemocue|hemograma|coombs|grupo rh|clasificacion y grupo|examen|laborator|cultivo|\bpcr\b|perfil bioq|electrocardio|\becg\b|glicemia|creatinin/.test(s)) return 'Exámenes de laboratorio';
+  if(/sutura|stratafix|vicryl|monocryl|prolene|nylon|nailon|\bseda\b|\bpds\b|catgut|monofil|poliglact/.test(s)) return 'Suturas';
+  if(/propofol|sevofl|sevor|remifen|fentan|rocuron|vecuron|cisatra|midazol|lidoca|bupiva|ropiva|levobupi|ketamin|efedrin|fenilefrin|lefrin|neostigm|atropin|dexmedet|sugammad/.test(s)) return 'Drogas anestésicas';
+  if(/cefazol|clindam|antibi|paracetam|ondansetr|ketorol|ketoprof|metamizol|dipiron|tramadol|morfin|dexametason|hidrocortison|corticoid|tranexam|clexane|enoxapar|heparin|probextra|droperidol|sulfato de magnesio|cloruro de potasio|ranitid|omepraz|zofran|toradol|dexketo|antiemet|analg/.test(s)) return 'Medicamentos';
+  if(/suero fisiolog|fisiolog|cloruro de sodio|ringer|glucosad|suero glucos/.test(s)) return 'Sueros y fluidos';
+  if(/dia cama|hospitaliz/.test(s)) return 'Hospitalización';
+  if(/pañal|sabanilla|aposito|apósito|gasa|jeringa|branula|bránula|alargador|alcohol|\btapa\b|tegaderm|llave|drenaj|blake|jvac|j-vac|reservorio|circuito|compresa|extensor|\btiva\b|aguja|medias|antiembol|bajada|\bkit\b|\bpad\b|sonda|cateter|catéter|venda|guante|electrodo|bistur|hoja|malla|canula|cánula|marcador|campo|tubo|conector|filtro|\bset\b|lipo/.test(s)) return 'Insumos';
   return 'Otros';
 }
 
@@ -343,7 +346,7 @@ function render(nom,A){
     +'<div class="b"><div class="mp">Desviación promedio</div><div class="big-num '+(A.deltaProm>0?'neg':'pos')+'">'+(A.deltaProm>0?'+':'')+A.deltaProm+' min</div></div>'
     +'<div class="b"><div class="mp">Cirugías que exceden</div><div class="big-num">'+A.nExc+' / '+A.nDur+'</div></div>'
     +'</div></div>';
-  a+='<div class="card hh"><h2>Extras por familia</h2><div class="sub" style="margin-bottom:8px">Agrupados en Tiempo, Insumos, Suturas, Drogas anestésicas y Medicamentos. Los que salen en ≥70% de las cirugías (chip «a la base») deberían ir incluidos en la ficha base del procedimiento → menos extras, cotización más certera.</div>'+extrasHab(A)+'</div>';
+  a+='<div class="card hh"><h2>Extras por familia</h2><div class="sub" style="margin-bottom:8px">Agrupados en Tiempo, Insumos, Suturas, Drogas anestésicas, Medicamentos, Sueros y Exámenes. Los que salen en ≥70% de las cirugías (chip «a la base») deberían ir incluidos en la ficha base del procedimiento → menos extras, cotización más certera.</div>'+extrasHab(A)+'</div>';
   a+='<div class="card hh"><h2>Valor para SMI &amp; recomendaciones</h2>'+valorRec(A)+'</div>';
   $('paneSMI').innerHTML=a;
 
