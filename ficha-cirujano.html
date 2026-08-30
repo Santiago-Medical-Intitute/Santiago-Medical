@@ -353,12 +353,14 @@ function valorCirujano(A){
     h+='<div class="lead"><b>'+A.pacOp+' de '+A.pacTot+' pacientes ya se operaron.</b> Pero <b>'+ab+' siguen abiertos</b>: no son un «no», son un «todavía no». Si la mitad de ellos entra a pabellón, su conversión sube a <b>'+projConv+'%</b> y su volumen quirúrgico pasa de <b>'+A.op.length+'</b> a cerca de <b>'+projCx+'</b> cirugías'+dup+'.</div>';
   }
   const R=[];
+  R.push(['🛡️','Opera con un <b>equipo afiatado</b> —anestesia, arsenalería y recuperación que ya conocen su forma de trabajar— en una <b>infraestructura acreditada</b>. Menos improvisación y más seguridad para su paciente y para usted.']);
   if(A.nDur>0){
     if(Math.abs(A.deltaProm)<=10) R.push(['⏱','Su tiempo real y el cotizado casi coinciden ('+varTxt+' en total). Esa precisión mantiene su pabellón disponible cuando lo necesita y evita cobros de tiempo adicional a sus pacientes.']);
     else if(A.deltaProm>10) R.push(['⏱','Sus cirugías tienden a durar más de lo cotizado (+'+A.deltaProm+' min en promedio). Ajustar el tiempo cotizado le asegura pabellón disponible y le evita cobros de tiempo adicional a sus pacientes.']);
     else R.push(['⏱','Suele terminar antes de lo cotizado. Cotizar el tiempo justo libera pabellón para más cirugías suyas.']);
   }
   R.push(['📦','Cuando la ficha base de cada cirugía ya incluye lo que usa siempre, su paciente no recibe sorpresas en la cuenta y las cotizaciones ganan certeza. Trabajemos juntos esas fichas.']);
+  R.push(['📊','Esta ficha es parte de lo que le ofrecemos: sus propios datos —conversión, tiempos, insumos y pacientes abiertos— ordenados para que vea dónde enfocarse. <b>Sin información no hay foco en lo que se puede mejorar.</b>']);
   R.push(['🤝','Nosotros nos hacemos cargo de todo lo que hay entre la cotización y el alta, y le devolvemos el dato para que su consulta crezca. En <b>Santiago Medical Institute</b> queremos que opere más y mejor: pabellón a tiempo, insumos previstos y seguimiento cercano de sus pacientes.']);
   h+=R.map(r=>'<div class="rec"><span class="ic">'+r[0]+'</span><span>'+r[1]+'</span></div>').join('');
   return h;
