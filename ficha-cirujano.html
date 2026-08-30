@@ -90,8 +90,8 @@ ol.rank li .num{color:var(--muted);font-weight:600;white-space:nowrap}
   #paneCir .card{margin-top:12px;border-color:#ddd;break-inside:avoid;page-break-inside:avoid}
   /* tarjeta larga de valor: fluye entre páginas, sin caja, pero cada sección queda entera */
   #valorCard{border:0;padding:0;background:none;break-inside:auto;page-break-inside:auto}
-  #valorCard>h2{break-after:avoid;page-break-after:avoid}
-  #valorCard .lead,#valorCard .vsec{break-inside:avoid;page-break-inside:avoid;margin-top:12px}
+  #valorCard .vintro{break-inside:avoid;page-break-inside:avoid} /* título + oportunidad juntos */
+  #valorCard .vsec{break-inside:avoid;page-break-inside:avoid;margin-top:12px}
   /* unidades que nunca se cortan */
   .kpi,.funnel,.eff .b,ol.rank li,.rec,table,tr{break-inside:avoid;page-break-inside:avoid}
   h2,h3{break-after:avoid;page-break-after:avoid}
@@ -358,7 +358,7 @@ function topExtras(A,k){
 function valorCirujano(A){
   const ab=A.pacTot-A.pacRes;
   const conT=A.cxTiempoExtra, totCx=A.op.length;
-  let h='';
+  let h='<div class="vintro"><h2>Por qué operar en Santiago Medical Institute</h2>';
 
   // 1. Oportunidad — calculada con los datos del cirujano
   if(ab>0){
@@ -369,6 +369,7 @@ function valorCirujano(A){
       +'<p>Si logramos recuperar solo la mitad de ellos, su conversión podría llegar aproximadamente al <b>'+projConv+'%</b>, llevando su actividad de <b>'+A.op.length+'</b> a cerca de <b>'+projCx+'</b> cirugías.</p>'
       +'<p>Nuestro objetivo no es solo recibir sus cirugías. Es ayudarlo a que más de sus pacientes lleguen efectivamente a pabellón.</p></div>';
   }
+  h+='</div>'; // cierra .vintro (título + oportunidad viajan juntos en el PDF)
 
   const S=[];
   S.push(['🛡️ Un equipo que ya conoce su forma de operar',
@@ -472,7 +473,7 @@ function render(nom,A){
     +'</div><div class="mp" style="margin-top:8px">De sus <b>'+A.op.length+'</b> cirugías, en <b>'+sinT+'</b> el tiempo cotizado alcanzó y en <b>'+conT+'</b> se necesitó tiempo adicional. Cotizar el tiempo lo más real posible mantiene su pabellón disponible y evita cobros de tiempo adicional a sus pacientes.</div></div>';
   b+='<div class="card hh"><h2>Sus cirugías más frecuentes en Santiago Medical Institute</h2><div class="sub" style="margin-bottom:8px">Las que más realiza aquí</div>'+topCirugias(A,3)+'</div>';
   b+='<div class="card hh"><h2>Sus extras más usados</h2><div class="sub" style="margin-bottom:8px">Los que más aparecen en el total de sus cirugías. La idea: que la ficha base de cada procedimiento ya los incluya, para que no salgan como extra ni como sorpresa en la cuenta de su paciente.</div>'+topExtras(A,5)+'</div>';
-  b+='<div class="card hh" id="valorCard"><h2>Por qué operar en Santiago Medical Institute</h2>'+valorCirujano(A)+'</div>';
+  b+='<div class="card hh" id="valorCard">'+valorCirujano(A)+'</div>';
   $('paneCir').innerHTML=b;
 
   $('phLogo').src=SMI_LOGO;
