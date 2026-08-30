@@ -108,6 +108,19 @@ function mKey(d){ if(!d) return null; const s=String(d); const dt=new Date(s.len
 function lastMonths(k){ const out=[],now=new Date(); for(let i=k-1;i>=0;i--){ const d=new Date(now.getFullYear(),now.getMonth()-i,1); out.push(d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')); } return out; }
 function mShort(k){ if(!k) return ''; const p=k.split('-'); return ['ene','feb','mar','abr','may','jun','jul','ago','sep','oct','nov','dic'][(+p[1])-1]+' '+p[0].slice(2); }
 const esc=s=>String(s==null?'':s).replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
+function grupoCx(nom){
+  const s=(nom||'').toLowerCase();
+  if(/ginecomast/.test(s)) return 'Ginecomastia';
+  if(/mama|mamari|mamopl|mastopex|pexia/.test(s)) return 'Cirugía de mama';
+  if(/rino|septo|nariz/.test(s)) return 'Rinoplastia';
+  if(/lipo/.test(s)) return 'Liposucción';
+  if(/abdomin/.test(s)) return 'Abdominoplastia';
+  if(/lift|ritidect/.test(s)) return 'Lifting';
+  if(/blefar|parpad/.test(s)) return 'Blefaroplastia';
+  if(/otoplast|oreja/.test(s)) return 'Otoplastia';
+  if(/gluteo/.test(s)) return 'Glúteos';
+  return nom||'—';
+}
 
 async function entrar(){
   const c=$('clave').value.trim(); if(!c) return;
@@ -147,7 +160,7 @@ function analizar(datos){
   const op=datos.filter(x=>x.estado==='operada');
   const conv={}; months.forEach(k=>conv[k]={op:0,res:0});
   datos.forEach(x=>{ if(x.estado!=='operada'&&x.estado!=='perdida')return; const k=mKey(x.creada_en); if(conv[k]){conv[k].res++; if(x.estado==='operada')conv[k].op++;} });
-  const mix={}; datos.forEach(x=>{ const k=x.cirugia||'—'; mix[k]=mix[k]||{cot:0,op:0,perd:0,montoOp:0,hCot:0,hReal:0,nDur:0};
+  const mix={}; datos.forEach(x=>{ const k=grupoCx(x.cirugia); mix[k]=mix[k]||{cot:0,op:0,perd:0,montoOp:0,hCot:0,hReal:0,nDur:0};
     mix[k].cot++; if(x.estado==='operada'){mix[k].op++; mix[k].montoOp+=(+x.total||0);
       if(x.duracion_real_min!=null){mix[k].hReal+=x.duracion_real_min; mix[k].hCot+=(x.duracion_cotizada_min||0); mix[k].nDur++;}}
     if(x.estado==='perdida')mix[k].perd++; });
@@ -155,7 +168,7 @@ function analizar(datos){
   op.forEach(x=>{ if(x.duracion_real_min!=null){ hRealTot+=x.duracion_real_min; hCotTot+=(x.duracion_cotizada_min||0); nDur++; const d=x.duracion_real_min-(x.duracion_cotizada_min||0); deltaSum+=d; if(d>0)nExc++; } });
   let extTot=0; const extHab={};
   datos.forEach(x=>{ (x.extras||[]).forEach(e=>{ if(e.estado!=='validado')return; extTot+=(+e.precio_total||0);
-    const cg=x.cirugia||'—', d=e.descripcion||e.tipo||'—'; extHab[cg]=extHab[cg]||{}; extHab[cg][d]=extHab[cg][d]||{n:0,sum:0}; extHab[cg][d].n++; extHab[cg][d].sum+=(+e.precio_total||0); }); });
+    const cg=grupoCx(x.cirugia), d=e.descripcion||e.tipo||'—'; extHab[cg]=extHab[cg]||{}; extHab[cg][d]=extHab[cg][d]||{n:0,sum:0}; extHab[cg][d].n++; extHab[cg][d].sum+=(+e.precio_total||0); }); });
   const montoOpTot=op.reduce((s,x)=>s+(+x.total||0),0);
   const deltaProm=nDur?Math.round(deltaSum/nDur):0;
   const conv6=(()=>{let o=0,r=0;months.forEach(k=>{o+=conv[k].op;r+=conv[k].res;});return r?Math.round(o/r*100):0;})();
@@ -234,7 +247,7 @@ function render(nom,A){
   // Pestaña A — ojos de SMI
   let a='';
   a+='<div class="card hh"><h2>Conversión mensual</h2><div class="sub" style="margin-bottom:8px">Por mes en que cotizó · ▲▼ vs mes anterior</div>'+convRow(A)+'</div>';
-  a+='<div class="card hh"><h2>Mix de cirugías</h2>'+mixTable(A)+'</div>';
+  a+='<div class="card hh"><h2>Mix de cirugías</h2><div class="sub" style="margin-bottom:8px">Agrupadas por categoría (Rino, Mama, Lipo, Lifting…)</div>'+mixTable(A)+'</div>';
   a+='<div class="card hh"><h2>Eficiencia de pabellón</h2><div class="eff">'
     +'<div class="b"><div class="mp">Horas que solicita</div><div class="big-num">'+h1dec(A.hCotTot)+' h</div></div>'
     +'<div class="b"><div class="mp">Horas que usa</div><div class="big-num">'+h1dec(A.hRealTot)+' h</div></div>'
