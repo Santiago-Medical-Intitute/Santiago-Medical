@@ -51,7 +51,8 @@ td:first-child,th:first-child{text-align:left;font-weight:600}
 .eff{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:12px}
 .eff .b{background:var(--tint);border-radius:10px;padding:12px 14px}
 .hidden{display:none}
-.funnel{display:flex;height:34px;border-radius:8px;overflow:hidden;margin:10px 0 8px;font-size:12.5px;font-weight:700;color:#fff}
+.funnel{display:flex;height:34px;border-radius:8px;overflow:hidden;margin:10px 0 8px;font-size:12.5px;font-weight:700;color:#fff;-webkit-print-color-adjust:exact;print-color-adjust:exact}
+.funnel>div,.fleg .dot,.chip{-webkit-print-color-adjust:exact;print-color-adjust:exact}
 .funnel>div{display:flex;align-items:center;justify-content:center;min-width:22px}
 .fleg{display:flex;gap:20px;flex-wrap:wrap;font-size:13px}
 .fleg .dot{display:inline-block;width:11px;height:11px;border-radius:3px;margin-right:6px;vertical-align:-1px}
@@ -59,6 +60,7 @@ td:first-child,th:first-child{text-align:left;font-weight:600}
 .hh h2{margin-bottom:2px}
 #printHead{display:none}
 @media print{
+  *{-webkit-print-color-adjust:exact !important;print-color-adjust:exact !important}
   body{background:#fff}
   .wrap{max-width:100%;padding:0}
   #login,#selCard,.top,.tabs,#paneSMI,#kpis,#vacio,.noprint{display:none !important}
@@ -147,6 +149,17 @@ function grupoCx(nom){
   if(/gluteo/.test(s)) return 'Glúteos';
   return nom||'—';
 }
+const FAM_ORDEN=['Tiempo adicional','Insumos','Suturas','Drogas anestésicas','Medicamentos','Otros'];
+// Agrupa cada extra en una familia (para no listar ítem por ítem)
+function grupoExtra(desc,tipo){
+  const s=((desc||'')+' '+(tipo||'')).toLowerCase();
+  if(/tiempo|adicional|prolong|excedent|\bmin\b|minuto|hora extra|sobretiempo/.test(s)) return 'Tiempo adicional';
+  if(/propofol|sevofl|sevor|remifen|fentan|rocuron|vecuron|cisatra|midazol|lidoca|bupiva|ropiva|levobupi|ketamin|efedrin|neostigm|atropin|dexmedet|sugammad|anestes|sedaci|halogena|oxido nitroso/.test(s)) return 'Drogas anestésicas';
+  if(/sutura|vicryl|monocryl|prolene|nylon|nailon|\bseda\b|\bpds\b|catgut|grapa|stapler|\bhilo|monofil|poliglactin/.test(s)) return 'Suturas';
+  if(/dexametason|ondansetr|ketorol|ketoprof|metamizol|dipiron|paracetam|tramadol|morfin|omepraz|ranitid|cefazol|cefazolin|clindam|antibi|dexketo|profenid|nausea|antiemet|analg|dorixin|zofran|toradol|heparin|enoxapar|clexane|tranexam|corticoid|suero|fisiolog|ringer/.test(s)) return 'Medicamentos';
+  if(/gasa|compresa|jeringa|aguja|guante|apósito|aposito|venda|steri|electrodo|bistur|hoja|sonda|cateter|catéter|catet|drenaj|mascarilla|circuito|tegaderm|malla|implante|expansor|protesis|prótesis|canula|cánula|lipo|liposuc|equipo|\bset\b|\bkit\b|adhesiv|\btela\b|faja|vendaje|marcador|campo|tubo|conector|filtro/.test(s)) return 'Insumos';
+  return 'Otros';
+}
 
 async function entrar(){
   const c=$('clave').value.trim(); if(!c) return;
@@ -213,13 +226,15 @@ function analizar(datos){
   op.forEach(x=>{ if(x.duracion_real_min!=null){ hRealTot+=x.duracion_real_min; hCotTot+=(x.duracion_cotizada_min||0); nDur++; const d=x.duracion_real_min-(x.duracion_cotizada_min||0); deltaSum+=d; if(d>0)nExc++; } });
   const deltaProm=nDur?Math.round(deltaSum/nDur):0;
 
-  // Extras por categoria (frecuencia = % de casos operados que lo llevan)
+  // Extras por categoria de cirugía → agrupados en FAMILIAS (Tiempo, Insumos, Suturas, Drogas, Medicamentos…)
   const ext={}; let extTot=0;
-  op.forEach(x=>{ const cat=grupoCx(x.cirugia); const e=ext[cat]||(ext[cat]={n:0,items:{}}); e.n++;
-    const vistos={};
+  op.forEach(x=>{ const cat=grupoCx(x.cirugia); const e=ext[cat]||(ext[cat]={n:0,fam:{}}); e.n++;
+    const vistoFam={};
     (x.extras||[]).forEach(xe=>{ if(xe.estado!=='validado')return; extTot+=(+xe.precio_total||0);
-      const d=xe.descripcion||xe.tipo||'—'; const it=e.items[d]||(e.items[d]={casos:0,monto:0,qty:0});
-      it.monto+=(+xe.precio_total||0); it.qty+=(+xe.cantidad||1); if(!vistos[d]){vistos[d]=1; it.casos++;} }); });
+      const d=xe.descripcion||xe.tipo||'—'; const F=grupoExtra(xe.descripcion,xe.tipo);
+      const f=e.fam[F]||(e.fam[F]={casos:0,monto:0,qty:0,items:{}});
+      f.monto+=(+xe.precio_total||0); f.qty+=(+xe.cantidad||1); f.items[d]=(f.items[d]||0)+1;
+      if(!vistoFam[F]){vistoFam[F]=1; f.casos++;} }); });
   const extPct=montoOpTot?Math.round(extTot/montoOpTot*100):0;
 
   return {datos,months,op,conv,conv6,pacTot,pacOp,pacPerd,pacRes,convAll,mix,hCotTot,hRealTot,nDur,nExc,deltaProm,extTot,extPct,ext,montoOpTot};
@@ -252,18 +267,22 @@ function mixTable(A){
   h+='</table></div>'; return h;
 }
 
-/* ---- extras habituales por cirugía ---- */
+/* ---- extras agrupados por FAMILIA, dentro de cada cirugía ---- */
 function extrasHab(A){
-  const cats=Object.keys(A.ext); if(!cats.length) return '<div class="mp">Sin extras validados registrados.</div>';
+  const cats=Object.keys(A.ext).filter(c=>Object.keys(A.ext[c].fam).length);
+  if(!cats.length) return '<div class="mp">Sin extras validados registrados — la ficha base cubrió todo. 👌</div>';
   cats.sort((a,b)=>A.ext[b].n-A.ext[a].n);
   let h='';
   cats.forEach(cat=>{ const e=A.ext[cat];
-    const items=Object.entries(e.items).map(([d,it])=>({d,freq:it.casos/e.n,casos:it.casos,qty:it.qty/it.casos,monto:it.monto/it.casos}))
-      .sort((a,b)=>b.freq-a.freq).slice(0,8);
-    h+='<div style="margin-bottom:12px"><div style="font-weight:700;margin-bottom:4px">'+esc(cat)+' <span class="mp" style="font-weight:400">· '+e.n+' cirugías</span></div>';
-    h+='<div class="wx"><table><tr><th>Insumo / extra</th><th>Frecuencia</th><th>Cant. prom.</th><th>Monto prom.</th></tr>';
-    items.forEach(it=>{ const pct=Math.round(it.freq*100);
-      h+='<tr><td>'+esc(it.d)+(pct>=70?' <span class="chip">a la base</span>':'')+'</td><td class="num">'+pct+'% <span class="cxf">('+it.casos+'/'+e.n+')</span></td><td class="num">'+it.qty.toFixed(1)+'</td><td class="num">'+clp(it.monto)+'</td></tr>'; });
+    const fams=Object.keys(e.fam).sort((a,b)=> (e.fam[b].casos-e.fam[a].casos) || (FAM_ORDEN.indexOf(a)-FAM_ORDEN.indexOf(b)) );
+    h+='<div style="margin-bottom:14px"><div style="font-weight:700;margin-bottom:4px">'+esc(cat)+' <span class="mp" style="font-weight:400">· '+e.n+' cirugías</span></div>';
+    h+='<div class="wx"><table><tr><th>Familia de extra</th><th>Frecuencia</th><th>Monto prom.</th><th>Ejemplos</th></tr>';
+    fams.forEach(F=>{ const f=e.fam[F]; const pct=Math.round(f.casos/e.n*100);
+      const ej=Object.entries(f.items).sort((a,b)=>b[1]-a[1]).slice(0,3).map(x=>esc(x[0])).join(', ');
+      h+='<tr><td>'+esc(F)+(pct>=70?' <span class="chip">a la base</span>':'')+'</td>'
+        +'<td class="num">'+pct+'% <span class="cxf">('+f.casos+'/'+e.n+')</span></td>'
+        +'<td class="num">'+clp(f.monto/f.casos)+'</td>'
+        +'<td style="text-align:left"><span class="cxf">'+ej+'</span></td></tr>'; });
     h+='</table></div></div>';
   });
   return h;
@@ -324,7 +343,7 @@ function render(nom,A){
     +'<div class="b"><div class="mp">Desviación promedio</div><div class="big-num '+(A.deltaProm>0?'neg':'pos')+'">'+(A.deltaProm>0?'+':'')+A.deltaProm+' min</div></div>'
     +'<div class="b"><div class="mp">Cirugías que exceden</div><div class="big-num">'+A.nExc+' / '+A.nDur+'</div></div>'
     +'</div></div>';
-  a+='<div class="card hh"><h2>Extras habituales por cirugía</h2><div class="sub" style="margin-bottom:8px">Candidatos a subir a la ficha base</div>'+extrasHab(A)+'</div>';
+  a+='<div class="card hh"><h2>Extras por familia</h2><div class="sub" style="margin-bottom:8px">Agrupados en Tiempo, Insumos, Suturas, Drogas anestésicas y Medicamentos. Los que salen en ≥70% de las cirugías (chip «a la base») deberían ir incluidos en la ficha base del procedimiento → menos extras, cotización más certera.</div>'+extrasHab(A)+'</div>';
   a+='<div class="card hh"><h2>Valor para SMI &amp; recomendaciones</h2>'+valorRec(A)+'</div>';
   $('paneSMI').innerHTML=a;
 
@@ -337,7 +356,7 @@ function render(nom,A){
     +'<div class="b"><div class="mp">Horas que usa</div><div class="big-num">'+h1dec(A.hRealTot)+' h</div></div>'
     +'<div class="b"><div class="mp">En promedio</div><div class="big-num '+(A.deltaProm>0?'neg':'pos')+'">'+(A.deltaProm>0?'+':'')+A.deltaProm+' min</div></div>'
     +'</div><div class="mp" style="margin-top:8px">Cotizar el tiempo lo más real posible ayuda a que su pabellón esté disponible cuando lo necesita y evita cobros de tiempo adicional a sus pacientes.</div></div>';
-  b+='<div class="card hh"><h2>Transparencia de extras</h2><div class="sub" style="margin-bottom:8px">Lo que se cobró en sus casos, por cirugía</div>'+extrasHab(A)+'</div>';
+  b+='<div class="card hh"><h2>Transparencia de extras</h2><div class="sub" style="margin-bottom:8px">Lo que se cobró en sus casos, agrupado por familia. Nuestra meta: que la ficha base de cada cirugía ya incluya lo necesario, para que los extras tiendan a cero y no haya sorpresas en la cuenta de su paciente.</div>'+extrasHab(A)+'</div>';
   $('paneCir').innerHTML=b;
 
   $('phName').textContent=nom;
