@@ -18,9 +18,11 @@ h2{font-family:'Cormorant Garamond',serif;font-size:21px;font-weight:700;margin:
 .card{background:var(--card);border:1px solid var(--line);border-radius:14px;padding:16px 18px;margin-top:16px}
 select,input{font:inherit;font-size:15px;padding:10px 12px;border:1px solid var(--line);border-radius:10px;background:#fff;color:var(--ink);width:100%}
 button{font:inherit;cursor:pointer}
-.btn{background:var(--crimson);color:#fff;border:0;border-radius:10px;padding:11px 16px;font-weight:700}
+.btn{background:var(--deep);color:#fff;border:0;border-radius:10px;padding:11px 16px;font-weight:700}
 #login{max-width:340px;margin:70px auto;text-align:center}
 #app{display:none}
+.loginTitle{font-family:'Cormorant Garamond',Georgia,serif;font-size:32px;font-weight:700;color:var(--ink);margin:0 0 2px}
+.g{color:var(--muted);font-size:14px;margin:0 0 16px}
 .top{display:flex;justify-content:space-between;align-items:flex-end;flex-wrap:wrap;gap:12px}
 .who{color:var(--muted);font-size:12px}
 .kpis{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:12px;margin-top:16px}
@@ -30,7 +32,7 @@ button{font:inherit;cursor:pointer}
 .kpi .sub{font-size:11.5px;color:var(--faint);margin-top:2px}
 .tabs{display:flex;gap:6px;margin-top:20px;border-bottom:2px solid var(--line)}
 .tab{padding:10px 18px;font-weight:700;font-size:14px;color:var(--muted);cursor:pointer;border-bottom:2px solid transparent;margin-bottom:-2px}
-.tab.on{color:var(--crimson);border-bottom-color:var(--crimson)}
+.tab.on{color:var(--deep);border-bottom-color:var(--deep)}
 table{border-collapse:collapse;width:100%;font-size:13.5px}
 th,td{border:1px solid var(--line);padding:7px 9px;text-align:center;white-space:nowrap}
 th{font-size:11.5px;text-transform:uppercase;letter-spacing:.03em;color:var(--muted);background:var(--tint)}
@@ -38,7 +40,7 @@ td:first-child,th:first-child{text-align:left;font-weight:600}
 .wx{overflow-x:auto}
 .cxf{font-size:10.5px;color:var(--faint);font-weight:400}
 .cxtr{font-size:9px;color:var(--ink);vertical-align:1px}
-.chip{display:inline-block;font-size:11px;font-weight:700;padding:2px 9px;border-radius:20px;background:var(--tint);color:var(--crimson)}
+.chip{display:inline-block;font-size:11px;font-weight:700;padding:2px 9px;border-radius:20px;background:var(--tint);color:var(--deep)}
 .rec{display:flex;gap:9px;align-items:flex-start;padding:9px 0;border-top:1px solid var(--line);font-size:13.5px}
 .rec:first-child{border-top:0}
 .rec .ic{font-size:16px;line-height:1.2}
@@ -55,9 +57,9 @@ td:first-child,th:first-child{text-align:left;font-weight:600}
 <body>
 <div class="wrap">
   <div id="login" class="card">
-    <h1 style="color:var(--crimson)">Ficha del Cirujano</h1>
-    <p class="sub">Ingrese su clave de acceso</p>
-    <input id="clave" type="password" placeholder="Clave" style="margin:12px 0">
+    <h1 class="loginTitle">Ficha del Cirujano</h1>
+    <p class="g">Santiago Medical Institute</p>
+    <input id="clave" type="password" placeholder="Clave de acceso" autocomplete="current-password" style="text-align:left">
     <button class="btn" id="entrar" style="width:100%">Entrar</button>
     <p id="loginMsg" class="sub" style="color:var(--neg);margin-top:10px"></p>
   </div>
@@ -65,7 +67,7 @@ td:first-child,th:first-child{text-align:left;font-weight:600}
   <div id="app">
     <div class="top">
       <div>
-        <h1 style="color:var(--crimson)">Ficha del Cirujano</h1>
+        <h1 style="color:var(--deep)">Ficha del Cirujano</h1>
         <div class="sub">Datos reales desde el OR System · últimos 6 meses</div>
       </div>
       <div class="who">Sesión: <strong id="whoTxt" style="color:var(--ink)">—</strong></div>
@@ -158,22 +160,42 @@ async function cargarCir(){
 function analizar(datos){
   const months=lastMonths(6);
   const op=datos.filter(x=>x.estado==='operada');
+  const montoOpTot=op.reduce((s,x)=>s+(+x.total||0),0);
+  const pacKey=x=>(x.rut&&String(x.rut).trim())?('rut:'+String(x.rut).trim()):('folio:'+x.folio);
+
+  // Conversion por PACIENTE (dedupe RUT). Cohorte = mes de su 1a cotizacion.
+  const pac={};
+  datos.forEach(x=>{ const k=pacKey(x); const p=pac[k]||(pac[k]={mesMin:null,op:false,perd:false,open:false});
+    const mk=mKey(x.creada_en); if(mk&&(!p.mesMin||mk<p.mesMin))p.mesMin=mk;
+    if(x.estado==='operada')p.op=true; else if(x.estado==='perdida')p.perd=true; else p.open=true; });
   const conv={}; months.forEach(k=>conv[k]={op:0,res:0});
-  datos.forEach(x=>{ if(x.estado!=='operada'&&x.estado!=='perdida')return; const k=mKey(x.creada_en); if(conv[k]){conv[k].res++; if(x.estado==='operada')conv[k].op++;} });
-  const mix={}; datos.forEach(x=>{ const k=grupoCx(x.cirugia); mix[k]=mix[k]||{cot:0,op:0,perd:0,montoOp:0,hCot:0,hReal:0,nDur:0};
-    mix[k].cot++; if(x.estado==='operada'){mix[k].op++; mix[k].montoOp+=(+x.total||0);
-      if(x.duracion_real_min!=null){mix[k].hReal+=x.duracion_real_min; mix[k].hCot+=(x.duracion_cotizada_min||0); mix[k].nDur++;}}
-    if(x.estado==='perdida')mix[k].perd++; });
+  Object.values(pac).forEach(p=>{ const c=p.op, lost=!p.op&&p.perd&&!p.open; if(!c&&!lost)return;
+    if(!conv[p.mesMin])return; conv[p.mesMin].res++; if(c)conv[p.mesMin].op++; });
+  const conv6=(()=>{let o=0,r=0;months.forEach(k=>{o+=conv[k].op;r+=conv[k].res;});return r?Math.round(o/r*100):0;})();
+  const pacTot=Object.keys(pac).length, pacOp=Object.values(pac).filter(p=>p.op).length;
+
+  // Mix por categoria (volumen por folio + conversion por paciente dentro de la categoria)
+  const mix={};
+  datos.forEach(x=>{ const k=grupoCx(x.cirugia); const g=mix[k]||(mix[k]={op:0,montoOp:0,hCot:0,hReal:0,nDur:0,pac:{}});
+    if(x.estado==='operada'){ g.op++; g.montoOp+=(+x.total||0); if(x.duracion_real_min!=null){g.hReal+=x.duracion_real_min;g.hCot+=(x.duracion_cotizada_min||0);g.nDur++;} }
+    const pk=pacKey(x); const pp=g.pac[pk]||(g.pac[pk]={op:false,perd:false,open:false});
+    if(x.estado==='operada')pp.op=true; else if(x.estado==='perdida')pp.perd=true; else pp.open=true; });
+
+  // Eficiencia (operados con duracion)
   let hCotTot=0,hRealTot=0,nDur=0,nExc=0,deltaSum=0;
   op.forEach(x=>{ if(x.duracion_real_min!=null){ hRealTot+=x.duracion_real_min; hCotTot+=(x.duracion_cotizada_min||0); nDur++; const d=x.duracion_real_min-(x.duracion_cotizada_min||0); deltaSum+=d; if(d>0)nExc++; } });
-  let extTot=0; const extHab={};
-  datos.forEach(x=>{ (x.extras||[]).forEach(e=>{ if(e.estado!=='validado')return; extTot+=(+e.precio_total||0);
-    const cg=grupoCx(x.cirugia), d=e.descripcion||e.tipo||'—'; extHab[cg]=extHab[cg]||{}; extHab[cg][d]=extHab[cg][d]||{n:0,sum:0}; extHab[cg][d].n++; extHab[cg][d].sum+=(+e.precio_total||0); }); });
-  const montoOpTot=op.reduce((s,x)=>s+(+x.total||0),0);
   const deltaProm=nDur?Math.round(deltaSum/nDur):0;
-  const conv6=(()=>{let o=0,r=0;months.forEach(k=>{o+=conv[k].op;r+=conv[k].res;});return r?Math.round(o/r*100):0;})();
+
+  // Extras por categoria (frecuencia = % de casos operados que lo llevan)
+  const ext={}; let extTot=0;
+  op.forEach(x=>{ const cat=grupoCx(x.cirugia); const e=ext[cat]||(ext[cat]={n:0,items:{}}); e.n++;
+    const vistos={};
+    (x.extras||[]).forEach(xe=>{ if(xe.estado!=='validado')return; extTot+=(+xe.precio_total||0);
+      const d=xe.descripcion||xe.tipo||'—'; const it=e.items[d]||(e.items[d]={casos:0,monto:0,qty:0});
+      it.monto+=(+xe.precio_total||0); it.qty+=(+xe.cantidad||1); if(!vistos[d]){vistos[d]=1; it.casos++;} }); });
   const extPct=montoOpTot?Math.round(extTot/montoOpTot*100):0;
-  return {datos,months,op,conv,conv6,mix,hCotTot,hRealTot,nDur,nExc,deltaProm,extTot,extPct,extHab,montoOpTot};
+
+  return {datos,months,op,conv,conv6,pacTot,pacOp,mix,hCotTot,hRealTot,nDur,nExc,deltaProm,extTot,extPct,ext,montoOpTot};
 }
 
 /* ---- matriz de conversión de una fila (por mes, con flecha) ---- */
@@ -193,23 +215,28 @@ function convRow(A){
 /* ---- mix de cirugías ---- */
 function mixTable(A){
   const arr=Object.entries(A.mix).sort((a,b)=>b[1].op-a[1].op);
-  let h='<div class="wx"><table><tr><th>Cirugía</th><th>Cotiz.</th><th>Oper.</th><th>Conv.</th><th>Ticket prom.</th><th>Horas cot.→real</th></tr>';
-  arr.forEach(([k,v],i)=>{ const res=v.op+v.perd, cv=res?Math.round(v.op/res*100):null;
+  let h='<div class="wx"><table><tr><th>Categoría</th><th>Operadas</th><th>Conv. pac.</th><th>Ticket prom.</th><th>Horas cot.→real</th></tr>';
+  arr.forEach(([k,v],i)=>{
+    let po=0,pr=0; Object.values(v.pac).forEach(p=>{ const c=p.op, l=!p.op&&p.perd&&!p.open; if(c||l){pr++; if(c)po++;} });
+    const cv=pr?Math.round(po/pr*100):null;
     const tk=v.op?clpK(v.montoOp/v.op):'—';
     const hc=v.nDur?(h1dec(v.hCot/v.nDur)+'→'+h1dec(v.hReal/v.nDur)+' h'):'—';
-    h+='<tr><td>'+esc(k)+(i===0?' <span class="chip">la que más hace</span>':'')+'</td><td class="num">'+v.cot+'</td><td class="num">'+v.op+'</td><td class="num">'+(cv==null?'—':cv+'%')+'</td><td class="num">'+tk+'</td><td class="num">'+hc+'</td></tr>'; });
+    h+='<tr><td>'+esc(k)+(i===0&&v.op>0?' <span class="chip">la que más hace</span>':'')+'</td><td class="num">'+v.op+'</td><td class="num">'+(cv==null?'—':cv+'%')+'</td><td class="num">'+tk+'</td><td class="num">'+hc+'</td></tr>'; });
   h+='</table></div>'; return h;
 }
 
 /* ---- extras habituales por cirugía ---- */
 function extrasHab(A){
-  const cgs=Object.keys(A.extHab); if(!cgs.length) return '<div class="mp">Sin extras validados registrados.</div>';
+  const cats=Object.keys(A.ext); if(!cats.length) return '<div class="mp">Sin extras validados registrados.</div>';
+  cats.sort((a,b)=>A.ext[b].n-A.ext[a].n);
   let h='';
-  cgs.forEach(cg=>{
-    const items=Object.entries(A.extHab[cg]).sort((a,b)=>b[1].n-a[1].n).slice(0,6);
-    h+='<div style="margin-bottom:10px"><div style="font-weight:700;margin-bottom:4px">'+esc(cg)+'</div>';
-    h+='<div class="wx"><table><tr><th>Insumo / extra</th><th>Veces</th><th>Monto prom.</th></tr>';
-    items.forEach(([d,v])=>h+='<tr><td>'+esc(d)+'</td><td class="num">'+v.n+'</td><td class="num">'+clp(v.sum/v.n)+'</td></tr>');
+  cats.forEach(cat=>{ const e=A.ext[cat];
+    const items=Object.entries(e.items).map(([d,it])=>({d,freq:it.casos/e.n,casos:it.casos,qty:it.qty/it.casos,monto:it.monto/it.casos}))
+      .sort((a,b)=>b.freq-a.freq).slice(0,8);
+    h+='<div style="margin-bottom:12px"><div style="font-weight:700;margin-bottom:4px">'+esc(cat)+' <span class="mp" style="font-weight:400">· '+e.n+' cirugías</span></div>';
+    h+='<div class="wx"><table><tr><th>Insumo / extra</th><th>Frecuencia</th><th>Cant. prom.</th><th>Monto prom.</th></tr>';
+    items.forEach(it=>{ const pct=Math.round(it.freq*100);
+      h+='<tr><td>'+esc(it.d)+(pct>=70?' <span class="chip">a la base</span>':'')+'</td><td class="num">'+pct+'% <span class="cxf">('+it.casos+'/'+e.n+')</span></td><td class="num">'+it.qty.toFixed(1)+'</td><td class="num">'+clp(it.monto)+'</td></tr>'; });
     h+='</table></div></div>';
   });
   return h;
@@ -237,8 +264,9 @@ function kpiCard(lab,val,sub){ return '<div class="kpi"><div class="lab">'+lab+'
 
 function render(nom,A){
   $('kpis').innerHTML=
-    kpiCard('Cotizaciones',A.datos.length,'total')+
-    kpiCard('Conversión 6m',A.conv6+'%','operó ÷ resueltas')+
+    kpiCard('Pacientes',A.pacTot,A.pacOp+' operaron')+
+    kpiCard('Cotizaciones',A.datos.length,'folios (varios por paciente)')+
+    kpiCard('Conversión 6m',A.conv6+'%','por paciente (RUT)')+
     kpiCard('Cirugías operadas',A.op.length,'')+
     kpiCard('Horas de pabellón',h1dec(A.hRealTot)+' h','usadas (real)')+
     kpiCard('Monto operado',clpK(A.montoOpTot),'ingreso que trae')+
@@ -246,7 +274,7 @@ function render(nom,A){
 
   // Pestaña A — ojos de SMI
   let a='';
-  a+='<div class="card hh"><h2>Conversión mensual</h2><div class="sub" style="margin-bottom:8px">Por mes en que cotizó · ▲▼ vs mes anterior</div>'+convRow(A)+'</div>';
+  a+='<div class="card hh"><h2>Conversión mensual</h2><div class="sub" style="margin-bottom:8px">Por paciente (RUT) · mes de su 1ª cotización · ▲▼ vs mes anterior</div>'+convRow(A)+'</div>';
   a+='<div class="card hh"><h2>Mix de cirugías</h2><div class="sub" style="margin-bottom:8px">Agrupadas por categoría (Rino, Mama, Lipo, Lifting…)</div>'+mixTable(A)+'</div>';
   a+='<div class="card hh"><h2>Eficiencia de pabellón</h2><div class="eff">'
     +'<div class="b"><div class="mp">Horas que solicita</div><div class="big-num">'+h1dec(A.hCotTot)+' h</div></div>'
@@ -260,7 +288,7 @@ function render(nom,A){
 
   // Pestaña B — ojos del cirujano
   let b='';
-  b+='<div class="card hh"><h2>Su conversión</h2><div class="sub" style="margin-bottom:8px">De lo que cotizó cada mes, cuánto terminó operando</div>'+convRow(A)+'</div>';
+  b+='<div class="card hh"><h2>Su conversión</h2><div class="sub" style="margin-bottom:8px">De los pacientes que cotizó cada mes, cuántos operaron (por RUT)</div>'+convRow(A)+'</div>';
   b+='<div class="card hh"><h2>Su gestión del tiempo de pabellón</h2><div class="eff">'
     +'<div class="b"><div class="mp">Horas que solicita</div><div class="big-num">'+h1dec(A.hCotTot)+' h</div></div>'
     +'<div class="b"><div class="mp">Horas que usa</div><div class="big-num">'+h1dec(A.hRealTot)+' h</div></div>'
