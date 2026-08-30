@@ -50,6 +50,10 @@ td:first-child,th:first-child{text-align:left;font-weight:600}
 .eff{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:12px}
 .eff .b{background:var(--tint);border-radius:10px;padding:12px 14px}
 .hidden{display:none}
+.funnel{display:flex;height:34px;border-radius:8px;overflow:hidden;margin:10px 0 8px;font-size:12.5px;font-weight:700;color:#fff}
+.funnel>div{display:flex;align-items:center;justify-content:center;min-width:22px}
+.fleg{display:flex;gap:20px;flex-wrap:wrap;font-size:13px}
+.fleg .dot{display:inline-block;width:11px;height:11px;border-radius:3px;margin-right:6px;vertical-align:-1px}
 .mp{color:var(--muted);font-size:13px}
 .hh h2{margin-bottom:2px}
 </style>
@@ -80,7 +84,6 @@ td:first-child,th:first-child{text-align:left;font-weight:600}
 
     <div id="cont" class="hidden">
       <div class="kpis" id="kpis"></div>
-      <div class="mp" style="margin-top:9px;font-size:12px">La <b>conversión</b> es pacientes que operaron ÷ pacientes <b>resueltos</b> (operados + perdidos). Los que cotizaron pero aún no deciden (abiertos) no cuentan todavía — por eso no es 13/56.</div>
       <div class="tabs">
         <div class="tab on" data-t="smi">👁 Con ojos de SMI</div>
         <div class="tab" data-t="cir">🩺 Ojos del cirujano</div>
@@ -265,6 +268,19 @@ function valorRec(A){
 
 function kpiCard(lab,val,sub){ return '<div class="kpi"><div class="lab">'+lab+'</div><div class="val num">'+val+'</div><div class="sub">'+(sub||'')+'</div></div>'; }
 
+function funnel(A){
+  const op=A.pacOp, pe=A.pacPerd, ab=A.pacTot-A.pacRes, tot=A.pacTot||1;
+  const seg=(n,c,lab)=> n>0?'<div style="width:'+(n/tot*100).toFixed(1)+'%;background:'+c+'" title="'+lab+': '+n+'">'+n+'</div>':'';
+  let h='<div class="sub" style="margin-bottom:2px">'+A.datos.length+' cotizaciones  →  <b>'+A.pacTot+' pacientes</b> distintos (RUT)</div>';
+  h+='<div class="funnel">'+seg(op,'#1f8a52','Operaron')+seg(pe,'#C1453A','Desistieron')+seg(ab,'#B7791F','Abiertos')+'</div>';
+  h+='<div class="fleg">'
+    +'<span><span class="dot" style="background:#1f8a52"></span>Operaron <b>'+op+'</b> ('+A.op.length+' cirugías)</span>'
+    +'<span><span class="dot" style="background:#C1453A"></span>Desistieron <b>'+pe+'</b></span>'
+    +'<span><span class="dot" style="background:#B7791F"></span>Abiertos <b>'+ab+'</b> · aún pueden operar</span></div>';
+  h+='<div class="sub" style="margin-top:9px">Conversión: <b>'+op+' de '+A.pacRes+' resueltos = '+A.convAll+'%</b>. Los '+ab+' abiertos todavía no cuentan — pueden subir la conversión al cerrarse.</div>';
+  return h;
+}
+
 function render(nom,A){
   $('kpis').innerHTML=
     kpiCard('Pacientes',A.pacTot,'distintos (RUT)')+
@@ -277,6 +293,7 @@ function render(nom,A){
 
   // Pestaña A — ojos de SMI
   let a='';
+  a+='<div class="card hh"><h2>Flujo de pacientes</h2>'+funnel(A)+'</div>';
   a+='<div class="card hh"><h2>Conversión mensual</h2><div class="sub" style="margin-bottom:8px">Por paciente (RUT) · mes de su 1ª cotización · ▲▼ vs mes anterior</div>'+convRow(A)+'</div>';
   a+='<div class="card hh"><h2>Mix de cirugías</h2><div class="sub" style="margin-bottom:8px">Agrupadas por categoría (Rino, Mama, Lipo, Lifting…)</div>'+mixTable(A)+'</div>';
   a+='<div class="card hh"><h2>Eficiencia de pabellón</h2><div class="eff">'
@@ -291,6 +308,7 @@ function render(nom,A){
 
   // Pestaña B — ojos del cirujano
   let b='';
+  b+='<div class="card hh"><h2>Flujo de sus pacientes</h2>'+funnel(A)+'</div>';
   b+='<div class="card hh"><h2>Su conversión</h2><div class="sub" style="margin-bottom:8px">De los pacientes que cotizó cada mes, cuántos operaron (por RUT)</div>'+convRow(A)+'</div>';
   b+='<div class="card hh"><h2>Su gestión del tiempo de pabellón</h2><div class="eff">'
     +'<div class="b"><div class="mp">Horas que solicita</div><div class="big-num">'+h1dec(A.hCotTot)+' h</div></div>'
