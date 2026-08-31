@@ -572,9 +572,23 @@ async function finalizarCirugia(casoId, btn){
 async function cerrarCaso(casoId){
   if(!confirm('¿Finalizar este caso? El paciente pasará a estado "Finalizada".')) return;
   try{
-    await rpc('smi_cerrar_caso',{p_clave:CLAVE,p_caso_id:casoId});
+    const r=await rpc('smi_cerrar_caso',{p_clave:CLAVE,p_caso_id:casoId});
+    if(r && r.ya_finalizada) alert('El caso ya estaba finalizado.');
     await cargar();
-  }catch(e){ alert('Error: '+e.message); }
+  }catch(e){
+    const msg=e.message||'';
+    // El candado backend puede pedir Aldrete >= 9; se permite forzar con indicación médica.
+    if(/Aldrete|criterio de alta/i.test(msg)){
+      if(confirm(msg+'\n\n¿Forzar el cierre con indicación médica?')){
+        try{
+          await rpc('smi_cerrar_caso',{p_clave:CLAVE,p_caso_id:casoId,p_forzar:true});
+          await cargar();
+        }catch(e2){ alert('Error: '+e2.message); }
+      }
+    } else {
+      alert('Error: '+msg);
+    }
+  }
 }
 
 /* ═══ EQUIPO ═══ */
