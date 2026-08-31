@@ -324,6 +324,7 @@ function abrir(id){
 
   // subformularios (ocultos)
   h+='<div class="subform hidden" id="formControl"><h4>Registrar control</h4>'
+    +fld('Hora del control','ctHora','time',horaAhora())
     +'<div class="form-grid">'
     +fld('PA sistólica','ctPaS','number')+fld('PA diastólica','ctPaD','number')
     +fld('FC','ctFc','number')+fld('SatO₂ %','ctSat','number')
@@ -357,6 +358,7 @@ function abrir(id){
 function cerrar(){ SEL=null; $('modal').classList.remove('on'); }
 function toggle(id){ const e=$(id); if(e) e.classList.toggle('hidden'); }
 function fld(label,id,type,val){ return '<div class="fld"><label>'+label+'</label><input id="'+id+'" type="'+(type||'text')+'"'+(val?' value="'+val+'"':'')+'></div>'; }
+function horaAhora(){ const d=new Date(); return String(d.getHours()).padStart(2,'0')+':'+String(d.getMinutes()).padStart(2,'0'); }
 function aldFld(label,id){ return '<div class="fld"><label>'+label+'</label><select id="'+id+'"><option value="2">2</option><option value="1">1</option><option value="0">0</option></select></div>'; }
 const val=id=>{ const e=$(id); return e&&e.value!==''?+e.value:null; };
 
@@ -376,6 +378,9 @@ async function guardarControl(id){
     p_temp:val('ctTemp'),p_dolor:val('ctEva'),
     p_ald_act:val('ctAct'),p_ald_resp:val('ctResp'),p_ald_circ:val('ctCirc'),
     p_ald_conc:val('ctConc'),p_ald_sat:val('ctSatO')};
+  // Hora del control: si la editaron/dejaron, se manda como instante (hoy + HH:MM local); si va vacío, el backend usa ahora.
+  const hm=($('ctHora')&&$('ctHora').value)||'';
+  if(hm){ const p=hm.split(':'); const d=new Date(); d.setHours(+p[0],+p[1],0,0); b.p_ocurrido_at=d.toISOString(); }
   try{ const r=await rpc('smi_recu_control',b); $('msgControl').textContent='Control guardado · Aldrete '+r.aldrete; $('msgControl').style.color='var(--pos)'; setTimeout(cargar,700); }
   catch(e){ $('msgControl').textContent='Error: '+e.message; $('msgControl').style.color='var(--neg)'; }
 }
