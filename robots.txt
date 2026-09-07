@@ -1,0 +1,3 @@
+# Sistema interno de Santiago Medical Institute — no indexar.
+User-agent: *
+Disallow: /

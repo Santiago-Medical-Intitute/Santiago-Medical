@@ -1,0 +1,174 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<meta name="robots" content="noindex,nofollow">
+<title>Santiago Medical Institute · Sistema de Pabellón</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:wght@500;600;700&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+:root{
+  --bg:#FAF7F6; --card:#FFFFFF; --ink:#1C1719; --muted:#857479; --faint:#A99CA0;
+  --line:#ECE0E2; --tint:#F7F0F1; --deep:#B22030; --crimson:#CD1D52; --bright:#E33C3B;
+  --info:#3B6FB3; --pos:#1E7A4D; --warn:#B7791F;
+  --sans:'Inter',system-ui,-apple-system,sans-serif;
+  --serif:'Cormorant Garamond',Georgia,serif;
+}
+*{box-sizing:border-box}
+body{margin:0;background:var(--bg);color:var(--ink);font-family:var(--sans);
+     -webkit-font-smoothing:antialiased}
+header{background:linear-gradient(120deg,var(--deep),var(--crimson));color:#fff;
+       padding:38px 24px 30px}
+.wrap{max-width:1080px;margin:0 auto}
+header h1{font-family:var(--serif);font-weight:600;font-size:2.5rem;margin:0 0 6px;
+          letter-spacing:.01em}
+header p{margin:0;color:#F2C7CF;font-size:.95rem}
+main{padding:34px 24px 64px}
+.grupo{margin-bottom:38px}
+.grupo>h2{font-family:var(--serif);font-size:1.45rem;font-weight:600;margin:0 0 4px;
+          color:var(--deep)}
+.grupo>.sub{margin:0 0 16px;color:var(--muted);font-size:.88rem}
+.grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(268px,1fr));gap:14px}
+a.card{display:block;background:var(--card);border:1px solid var(--line);border-radius:12px;
+       padding:16px 18px;text-decoration:none;color:inherit;transition:.16s;
+       box-shadow:0 1px 2px rgba(28,23,25,.04)}
+a.card:hover{border-color:var(--crimson);transform:translateY(-2px);
+             box-shadow:0 6px 18px rgba(178,32,48,.13)}
+a.card:focus-visible{outline:2px solid var(--crimson);outline-offset:2px}
+.card .n{font-weight:600;font-size:1.02rem;margin-bottom:5px;display:flex;
+         align-items:center;gap:8px}
+.card .d{color:var(--muted);font-size:.855rem;line-height:1.45}
+.card .f{margin-top:9px;font-size:.72rem;color:var(--faint);font-family:ui-monospace,SFMono-Regular,Menlo,monospace}
+.tag{font-size:.66rem;font-weight:600;padding:2px 7px;border-radius:99px;
+     text-transform:uppercase;letter-spacing:.045em;white-space:nowrap}
+.tag.paciente{background:#E9EEE9;color:var(--pos)}
+.tag.escribe{background:#FBF0DA;color:var(--warn)}
+footer{border-top:1px solid var(--line);padding:22px 24px;color:var(--faint);font-size:.8rem}
+footer code{font-family:ui-monospace,SFMono-Regular,Menlo,monospace;font-size:.95em}
+@media (prefers-color-scheme:dark){
+  :root{--bg:#161113;--card:#1F181A;--ink:#F4EDEE;--muted:#A99CA0;--faint:#7C6E72;
+        --line:#332A2D;--tint:#241D1F}
+  .tag.paciente{background:#1B2A20;color:#7FCB9F}
+  .tag.escribe{background:#2E2413;color:#E2B65C}
+}
+</style>
+</head>
+<body>
+<header>
+  <div class="wrap">
+    <h1>Santiago Medical Institute</h1>
+    <p>Sistema de Pabellón — índice de accesos</p>
+  </div>
+</header>
+
+<main class="wrap">
+
+  <section class="grupo">
+    <h2>Cotización y agenda</h2>
+    <p class="sub">Desde la solicitud del cirujano hasta la cirugía agendada.</p>
+    <div class="grid">
+      <a class="card" href="cotizador-pabellon-smi.html">
+        <div class="n">Cotizador de Pabellón <span class="tag escribe">escribe</span></div>
+        <div class="d">Arma la cotización de un caso a partir del catálogo de cirugías, convenios e insumos.</div>
+        <div class="f">cotizador-pabellon-smi.html</div></a>
+      <a class="card" href="seguimiento-cotizaciones-smi.html">
+        <div class="n">Seguimiento de Cotizaciones <span class="tag escribe">escribe</span></div>
+        <div class="d">Estado de cada cotización, autorización de descuentos, agendamiento y metas.</div>
+        <div class="f">seguimiento-cotizaciones-smi.html</div></a>
+      <a class="card" href="precio-lista.html">
+        <div class="n">Precio de Lista</div>
+        <div class="d">Consulta de precios de lista del catálogo.</div>
+        <div class="f">precio-lista.html</div></a>
+    </div>
+  </section>
+
+  <section class="grupo">
+    <h2>Planificación</h2>
+    <p class="sub">Asignación de pabellones, anestesia y preparación del caso.</p>
+    <div class="grid">
+      <a class="card" href="enfermera-jefe.html">
+        <div class="n">Planificación de Pabellones <span class="tag escribe">escribe</span></div>
+        <div class="d">Asigna, mueve y cancela casos en la semana; valida insumos extra pendientes.</div>
+        <div class="f">enfermera-jefe.html</div></a>
+      <a class="card" href="anestesia.html">
+        <div class="n">Coordinación de Anestesia <span class="tag escribe">escribe</span></div>
+        <div class="d">Agenda de anestesistas y asignación por caso.</div>
+        <div class="f">anestesia.html</div></a>
+      <a class="card" href="operaciones.html">
+        <div class="n">Operaciones</div>
+        <div class="d">Vista de la semana y casos pendientes de ficha.</div>
+        <div class="f">operaciones.html</div></a>
+      <a class="card" href="recepcion.html">
+        <div class="n">Recepción Pabellones</div>
+        <div class="d">Cirugías programadas por rango de fecha; genera el enlace de ficha prequirúrgica.</div>
+        <div class="f">recepcion.html</div></a>
+    </div>
+  </section>
+
+  <section class="grupo">
+    <h2>Día quirúrgico</h2>
+    <p class="sub">Lo que ocurre el día de la cirugía, de sala a recuperación.</p>
+    <div class="grid">
+      <a class="card" href="sala.html">
+        <div class="n">Panel de Sala <span class="tag escribe">escribe</span></div>
+        <div class="d">Verificación de paciente, inicio y cierre de cirugía, incisiones, equipo e insumos extra.</div>
+        <div class="f">sala.html</div></a>
+      <a class="card" href="recuperacion.html">
+        <div class="n">Recuperación <span class="tag escribe">escribe</span></div>
+        <div class="d">Asignación de cama, controles post-operatorios, insumos extra y alta.</div>
+        <div class="f">recuperacion.html</div></a>
+      <a class="card" href="pre.html">
+        <div class="n">Ficha Prequirúrgica <span class="tag paciente">paciente</span></div>
+        <div class="d">Formulario que completa el paciente. Se abre con enlace y token, sin clave de operaciones.</div>
+        <div class="f">pre.html?token=…</div></a>
+    </div>
+  </section>
+
+  <section class="grupo">
+    <h2>Fichas y consulta</h2>
+    <p class="sub">Consulta del detalle de un caso.</p>
+    <div class="grid">
+      <a class="card" href="ficha.html">
+        <div class="n">Ficha del Caso</div>
+        <div class="d">Búsqueda y detalle completo de un caso.</div>
+        <div class="f">ficha.html</div></a>
+      <a class="card" href="ficha-cirujano.html">
+        <div class="n">Ficha del Cirujano</div>
+        <div class="d">Vista del caso orientada al cirujano.</div>
+        <div class="f">ficha-cirujano.html</div></a>
+      <a class="card" href="ficha-insumos.html">
+        <div class="n">Ficha de Insumos <span class="tag escribe">escribe</span></div>
+        <div class="d">Arma la ficha de insumos de una cirugía: agrega, quita y ajusta cantidades.</div>
+        <div class="f">ficha-insumos.html</div></a>
+    </div>
+  </section>
+
+  <section class="grupo">
+    <h2>Administración</h2>
+    <p class="sub">Catálogo maestro, stock y dirección.</p>
+    <div class="grid">
+      <a class="card" href="admin-catalogo-smi.html">
+        <div class="n">Administración del Catálogo <span class="tag escribe">escribe</span></div>
+        <div class="d">Cirugías, cirujanos, anestesistas, convenios y combinables.</div>
+        <div class="f">admin-catalogo-smi.html</div></a>
+      <a class="card" href="bodega.html">
+        <div class="n">Bodega · Stock <span class="tag escribe">escribe</span></div>
+        <div class="d">Stock de bodega e importación del inventario exportado desde Medilink.</div>
+        <div class="f">bodega.html</div></a>
+      <a class="card" href="director.html">
+        <div class="n">Panel de Dirección</div>
+        <div class="d">Vista consolidada de casos, cotizaciones y asignaciones.</div>
+        <div class="f">director.html</div></a>
+    </div>
+  </section>
+
+</main>
+
+<footer class="wrap">
+  Uso interno · Santiago Medical Institute. Todas las páginas piden la clave de operaciones,
+  salvo <code>pre.html</code>, que se abre con el enlace y token entregado al paciente.
+</footer>
+</body>
+</html>
