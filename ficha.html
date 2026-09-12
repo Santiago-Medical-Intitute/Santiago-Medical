@@ -141,7 +141,7 @@ const SUPA_KEY='sb_publishable_lVaI9a2wWFa0PSL3edPiRA_cVMlXDwG';
 const $=id=>document.getElementById(id);
 const DIAS=['domingo','lunes','martes','miércoles','jueves','viernes','sábado'];
 const MESES=['enero','febrero','marzo','abril','mayo','junio','julio','agosto','septiembre','octubre','noviembre','diciembre'];
-let CLAVE='',SESION='';
+let CLAVE='',SESION='',PUEDE_REABRIR=false;
 
 async function rpc(fn,body){
   const r=await fetch(SUPA_URL+'/rest/v1/rpc/'+fn,{method:'POST',
@@ -184,7 +184,7 @@ async function entrar(){
     const usr=Array.isArray(u)?u[0]:u;
     if(!usr){$('gateMsg').textContent='Clave incorrecta.';return;}
     if(!usr.puede_ficha){$('gateMsg').textContent='Esta clave no tiene acceso a las fichas.';return;}
-    SESION=usr.nombre; CLAVE=c;
+    SESION=usr.nombre; CLAVE=c; PUEDE_REABRIR=!!(usr.puede_recuperacion||usr.puede_director);
     $('whoTxt').textContent=SESION;
     $('gate').style.display='none'; $('app').style.display='block';
     const pre=new URLSearchParams(location.search).get('folio');
@@ -234,6 +234,18 @@ async function abrirFolio(folio){
   }catch(e){ $('ficha').innerHTML='<div class="card"><div class="empty">Error al cargar la ficha.</div></div>'; }
 }
 
+async function reabrir(folio){
+  if(!confirm('¿Reabrir '+folio+' y devolverla a Recuperación?\n\nRevierte la finalización: la paciente vuelve al tablero de recuperación para seguir registrando controles.')) return;
+  const msg=document.getElementById('reabrirMsg'); if(msg){ msg.textContent='Reabriendo…'; msg.style.color='var(--muted)'; }
+  try{
+    const r=await rpc('smi_recu_reabrir',{p_clave:CLAVE,p_folio:folio});
+    if(msg){ msg.textContent=(r&&r.sin_cama)?'✓ Reabierta — quedó sin cama, reasignar en Recuperación':'✓ Reabierta'+(r&&r.cama?' · '+r.cama:''); msg.style.color='var(--pos)'; }
+    setTimeout(()=>abrirFolio(folio),800);
+  }catch(e){
+    if(msg){ msg.textContent='Error: '+(e&&e.message?e.message:e); msg.style.color='var(--neg)'; }
+  }
+}
+
 /* ══ RENDER ══ */
 function pillEstado(e){
   const m={pagada:'ok',operada:'ok',agendada:'info',entregada:'grey',perdida:'neg',finalizada:'ok',en_cirugia:'warn',programada:'info'};
@@ -253,7 +265,9 @@ function render(d){
   h+='<div class="card"><div class="fh">'
    + '<div><h2>'+esc(cot.paciente||'—')+'</h2>'
    + '<div class="who">'+esc(cot.cirugia||'')+' · '+esc(cot.cirujano||'')+(cot.rut?' · '+esc(cot.rut):'')+'</div></div>'
-   + '<div><div class="folio-big">'+esc(cot.folio)+'</div><div style="text-align:right">'+pillEstado(cot.estado)+'</div></div>'
+   + '<div><div class="folio-big">'+esc(cot.folio)+'</div><div style="text-align:right">'+pillEstado(cot.estado)+'</div>'
+   + ((PUEDE_REABRIR && c && c.estado==='finalizada') ? '<div style="text-align:right;margin-top:10px"><button onclick="reabrir(\''+cot.folio+'\')" style="background:linear-gradient(120deg,#166b41,var(--pos));color:#fff;border:none;border-radius:9px;padding:8px 13px;font-weight:700;cursor:pointer;font-size:13px">\u21a9 Reabrir a recuperaci\u00f3n</button><div id="reabrirMsg" style="font-size:12px;margin-top:6px"></div></div>' : '')
+   + '</div>'
    + '</div>';
   h+='<div class="kv" style="margin-top:16px">'
    + kv('Pabellón', c&&c.pabellon?('Pabellón '+c.pabellon):'—')
