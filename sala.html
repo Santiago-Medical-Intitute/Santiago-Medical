@@ -487,11 +487,47 @@ function startTimer(casoId, inicioISO, cotizadaMin){
   TIMERS[casoId]=setInterval(tick, 1000);
 }
 
+function pedirClavePersonal(accion){
+  return new Promise(function(resolve){
+    var ov=document.createElement('div');
+    ov.style.cssText='position:fixed;inset:0;background:rgba(28,23,25,.55);display:flex;align-items:center;justify-content:center;z-index:99999';
+    ov.innerHTML='<div style="background:var(--card,#fff);border-radius:14px;padding:22px;width:min(92vw,340px);box-shadow:0 12px 40px rgba(0,0,0,.28)">'
+      +'<div style="font-family:var(--serif,Georgia),serif;font-size:19px;font-weight:600;color:var(--ink,#1c1719);margin-bottom:4px">Confirma con tu clave</div>'
+      +'<div style="font-size:13px;color:var(--muted,#857479);margin-bottom:14px">'+accion+'</div>'
+      +'<input id="__pcInp" type="password" autocomplete="off" placeholder="Tu clave personal" style="width:100%;box-sizing:border-box;padding:11px 12px;border:1px solid var(--line,#e0d7d9);border-radius:9px;font-size:16px">'
+      +'<div id="__pcMsg" style="font-size:12.5px;min-height:16px;margin:8px 2px 0"></div>'
+      +'<div style="display:flex;gap:8px;margin-top:10px">'
+      +'<button id="__pcCancel" type="button" style="flex:1;padding:10px;border:1px solid var(--line,#e0d7d9);background:#fff;color:var(--ink,#1c1719);border-radius:9px;font-weight:600;cursor:pointer">Cancelar</button>'
+      +'<button id="__pcOk" type="button" style="flex:1;padding:10px;border:none;background:linear-gradient(120deg,var(--deep,#b22030),var(--crimson,#cd1d52));color:#fff;border-radius:9px;font-weight:700;cursor:pointer">Confirmar</button>'
+      +'</div></div>';
+    document.body.appendChild(ov);
+    var inp=ov.querySelector('#__pcInp'),msg=ov.querySelector('#__pcMsg'),ok=ov.querySelector('#__pcOk'),cancel=ov.querySelector('#__pcCancel');
+    setTimeout(function(){ inp.focus(); },50);
+    function cerrarM(val){ document.removeEventListener('keydown',onKey); ov.remove(); resolve(val); }
+    async function confirmar(){
+      var c=inp.value.trim(); if(!c){ inp.focus(); return; }
+      ok.disabled=true; msg.style.color='var(--muted,#857479)'; msg.textContent='Verificando…';
+      try{
+        var r=await rpc('smi_login_personal',{p_clave:c});
+        var u=Array.isArray(r)?r[0]:r;
+        if(u&&u.nombre){ cerrarM({clave:c,nombre:u.nombre}); }
+        else{ msg.style.color='var(--neg,#c0202f)'; msg.textContent='Clave no válida. Usa tu clave personal.'; ok.disabled=false; inp.select(); }
+      }catch(e){ msg.style.color='var(--neg,#c0202f)'; msg.textContent='Error de conexión.'; ok.disabled=false; }
+    }
+    function onKey(e){ if(e.key==='Enter'){ e.preventDefault(); confirmar(); } else if(e.key==='Escape'){ cerrarM(null); } }
+    ok.onclick=confirmar; cancel.onclick=function(){ cerrarM(null); };
+    ov.addEventListener('click',function(e){ if(e.target===ov) cerrarM(null); });
+    document.addEventListener('keydown',onKey);
+  });
+}
+
 /* ═══ ACCIONES ═══ */
 async function verificar(casoId){
   if(!confirm('¿Confirma que el paciente en camilla corresponde a esta cotización?')) return;
+  const auth=await pedirClavePersonal('Verificar identidad del paciente');
+  if(!auth) return;
   try{
-    await rpc('smi_verificar_paciente',{p_clave:CLAVE,p_caso_id:casoId});
+    await rpc('smi_verificar_paciente',{p_clave:auth.clave,p_caso_id:casoId});
     await cargar();
   }catch(e){ alert('Error: '+e.message); }
 }
@@ -542,8 +578,10 @@ async function iniciarCirugia(casoId){
     +'¿Es el proceso quirúrgico correcto?\n'
     +'Al aceptar parte el reloj y NO se puede deshacer.';
   if(!confirm(msg)) return;
+  const auth=await pedirClavePersonal('Inicio del proceso quirúrgico');
+  if(!auth) return;
   try{
-    await rpc('smi_iniciar_cirugia',{p_clave:CLAVE,p_caso_id:casoId});
+    await rpc('smi_iniciar_cirugia',{p_clave:auth.clave,p_caso_id:casoId});
     await cargar();
   }catch(e){ alert('Error: '+e.message); }
 }
@@ -551,12 +589,13 @@ async function iniciarCirugia(casoId){
 const FINALIZANDO={};
 async function finalizarCirugia(casoId, btn){
   if(FINALIZANDO[casoId]) return;                 // ya hay una finalización en curso
-  if(!confirm('¿Detener el reloj y finalizar la cirugía?')) return;
+  const auth=await pedirClavePersonal('Finalizar cirugía · se detiene el reloj');
+  if(!auth) return;
   FINALIZANDO[casoId]=true;
   if(btn){ btn.disabled=true; btn.style.opacity='.55'; btn.style.pointerEvents='none'; }
   try{
     if(TIMERS[casoId]){ clearInterval(TIMERS[casoId]); delete TIMERS[casoId]; }
-    const res=await rpc('smi_finalizar_cirugia',{p_clave:CLAVE,p_caso_id:casoId});
+    const res=await rpc('smi_finalizar_cirugia',{p_clave:auth.clave,p_caso_id:casoId});
     if(res && res.ya_finalizada){
       alert('Esta cirugía ya estaba finalizada; no se agregó ningún cobro nuevo.');
     } else if(res && res.excedido_min>0){
@@ -570,9 +609,10 @@ async function finalizarCirugia(casoId, btn){
 }
 
 async function cerrarCaso(casoId){
-  if(!confirm('¿Finalizar este caso? El paciente pasará a estado "Finalizada".')) return;
+  const auth=await pedirClavePersonal('Finalizar caso');
+  if(!auth) return;
   try{
-    const r=await rpc('smi_cerrar_caso',{p_clave:CLAVE,p_caso_id:casoId});
+    const r=await rpc('smi_cerrar_caso',{p_clave:auth.clave,p_caso_id:casoId});
     if(r && r.ya_finalizada) alert('El caso ya estaba finalizado.');
     await cargar();
   }catch(e){
@@ -581,7 +621,7 @@ async function cerrarCaso(casoId){
     if(/Aldrete|criterio de alta/i.test(msg)){
       if(confirm(msg+'\n\n¿Forzar el cierre con indicación médica?')){
         try{
-          await rpc('smi_cerrar_caso',{p_clave:CLAVE,p_caso_id:casoId,p_forzar:true});
+          await rpc('smi_cerrar_caso',{p_clave:auth.clave,p_caso_id:casoId,p_forzar:true});
           await cargar();
         }catch(e2){ alert('Error: '+e2.message); }
       }

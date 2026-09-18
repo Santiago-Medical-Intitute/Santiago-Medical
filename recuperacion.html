@@ -362,6 +362,40 @@ function horaAhora(){ const d=new Date(); return String(d.getHours()).padStart(2
 function aldFld(label,id){ return '<div class="fld"><label>'+label+'</label><select id="'+id+'"><option value="2">2</option><option value="1">1</option><option value="0">0</option></select></div>'; }
 const val=id=>{ const e=$(id); return e&&e.value!==''?+e.value:null; };
 
+function pedirClavePersonal(accion){
+  return new Promise(function(resolve){
+    var ov=document.createElement('div');
+    ov.style.cssText='position:fixed;inset:0;background:rgba(28,23,25,.55);display:flex;align-items:center;justify-content:center;z-index:99999';
+    ov.innerHTML='<div style="background:var(--card,#fff);border-radius:14px;padding:22px;width:min(92vw,340px);box-shadow:0 12px 40px rgba(0,0,0,.28)">'
+      +'<div style="font-family:var(--serif,Georgia),serif;font-size:19px;font-weight:600;color:var(--ink,#1c1719);margin-bottom:4px">Confirma con tu clave</div>'
+      +'<div style="font-size:13px;color:var(--muted,#857479);margin-bottom:14px">'+accion+'</div>'
+      +'<input id="__pcInp" type="password" autocomplete="off" placeholder="Tu clave personal" style="width:100%;box-sizing:border-box;padding:11px 12px;border:1px solid var(--line,#e0d7d9);border-radius:9px;font-size:16px">'
+      +'<div id="__pcMsg" style="font-size:12.5px;min-height:16px;margin:8px 2px 0"></div>'
+      +'<div style="display:flex;gap:8px;margin-top:10px">'
+      +'<button id="__pcCancel" type="button" style="flex:1;padding:10px;border:1px solid var(--line,#e0d7d9);background:#fff;color:var(--ink,#1c1719);border-radius:9px;font-weight:600;cursor:pointer">Cancelar</button>'
+      +'<button id="__pcOk" type="button" style="flex:1;padding:10px;border:none;background:linear-gradient(120deg,var(--deep,#b22030),var(--crimson,#cd1d52));color:#fff;border-radius:9px;font-weight:700;cursor:pointer">Confirmar</button>'
+      +'</div></div>';
+    document.body.appendChild(ov);
+    var inp=ov.querySelector('#__pcInp'),msg=ov.querySelector('#__pcMsg'),ok=ov.querySelector('#__pcOk'),cancel=ov.querySelector('#__pcCancel');
+    setTimeout(function(){ inp.focus(); },50);
+    function cerrarM(val){ document.removeEventListener('keydown',onKey); ov.remove(); resolve(val); }
+    async function confirmar(){
+      var c=inp.value.trim(); if(!c){ inp.focus(); return; }
+      ok.disabled=true; msg.style.color='var(--muted,#857479)'; msg.textContent='Verificando…';
+      try{
+        var r=await rpc('smi_login_personal',{p_clave:c});
+        var u=Array.isArray(r)?r[0]:r;
+        if(u&&u.nombre){ cerrarM({clave:c,nombre:u.nombre}); }
+        else{ msg.style.color='var(--neg,#c0202f)'; msg.textContent='Clave no válida. Usa tu clave personal.'; ok.disabled=false; inp.select(); }
+      }catch(e){ msg.style.color='var(--neg,#c0202f)'; msg.textContent='Error de conexión.'; ok.disabled=false; }
+    }
+    function onKey(e){ if(e.key==='Enter'){ e.preventDefault(); confirmar(); } else if(e.key==='Escape'){ cerrarM(null); } }
+    ok.onclick=confirmar; cancel.onclick=function(){ cerrarM(null); };
+    ov.addEventListener('click',function(e){ if(e.target===ov) cerrarM(null); });
+    document.addEventListener('keydown',onKey);
+  });
+}
+
 async function asignarCama(id){
   const cama=$('camaSel').value;
   try{ await rpc('smi_recu_asignar_cama',{p_clave:CLAVE,p_caso_id:id,p_cama:cama}); await cargar(); }
@@ -369,7 +403,9 @@ async function asignarCama(id){
 }
 window.moverHab=async(id)=>{
   const sel=document.getElementById('habSel-'+id); if(!sel) return;
-  try{ await rpc('smi_recu_asignar_cama',{p_clave:CLAVE,p_caso_id:id,p_cama:sel.value}); await cargar(); }
+  const auth=await pedirClavePersonal('Pasar a habitación '+sel.value);
+  if(!auth) return;
+  try{ await rpc('smi_recu_asignar_cama',{p_clave:auth.clave,p_caso_id:id,p_cama:sel.value}); await cargar(); }
   catch(e){ const m=document.getElementById('msgHab-'+id); if(m){ m.textContent='Error: '+e.message; m.style.color='var(--neg)'; } }
 };
 async function guardarControl(id){
@@ -416,10 +452,10 @@ async function darAlta(id, requiereForzar){
   const c=CASOS.find(x=>x.id===id)||{};
   if(requiereForzar){
     if(!confirm('Aldrete '+(c.ultimo_aldrete!=null?c.ultimo_aldrete:'—')+'/10 — aún no cumple el criterio de alta (≥9).\n\n¿Finalizar el caso igualmente, con indicación médica?')) return;
-  } else {
-    if(!confirm('¿Finalizar el caso de '+(c.paciente||'')+'? Se cierra la cuenta (extras) y libera la cama.')) return;
   }
-  try{ await rpc('smi_recu_alta',{p_clave:CLAVE,p_caso_id:id,p_forzar:!!requiereForzar}); cerrar(); await cargar(); }
+  const auth=await pedirClavePersonal('Finalizar caso de '+(c.paciente||''));
+  if(!auth) return;
+  try{ await rpc('smi_recu_alta',{p_clave:auth.clave,p_caso_id:id,p_forzar:!!requiereForzar}); cerrar(); await cargar(); }
   catch(e){ $('msgAlta').textContent='Error: '+e.message; $('msgAlta').style.color='var(--neg)'; }
 }
 </script>
