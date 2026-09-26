@@ -578,10 +578,8 @@ async function iniciarCirugia(casoId){
     +'¿Es el proceso quirúrgico correcto?\n'
     +'Al aceptar parte el reloj y NO se puede deshacer.';
   if(!confirm(msg)) return;
-  const auth=await pedirClavePersonal('Inicio del proceso quirúrgico');
-  if(!auth) return;
   try{
-    await rpc('smi_iniciar_cirugia',{p_clave:auth.clave,p_caso_id:casoId});
+    await rpc('smi_iniciar_cirugia',{p_clave:CLAVE,p_caso_id:casoId});
     await cargar();
   }catch(e){ alert('Error: '+e.message); }
 }
