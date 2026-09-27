@@ -176,7 +176,7 @@ function fila(i){
   const cls = i.estado==='critico'?'critico':'bajo';
   const qcls = i.estado==='critico'?'neg':'warn';
   return '<div class="row '+cls+'"><div class="accent"></div>'
-    +'<div><div class="nm">'+esc(i.nombre)+(!i.mapeado?'<span class="badge-nm">sin mapear</span>':'')+editBtn(i)+'</div>'
+    +'<div><div class="nm">'+esc(i.nombre)+(!i.mapeado?mapBtn(i):'')+editBtn(i)+'</div>'
     +'<div class="meta">'+esc(i.producto)+'</div>'
     +(i.proveedor&&i.proveedor!=='-'?'<div class="prov">Proveedor: '+esc(i.proveedor)+'</div>':'<div class="prov" style="color:var(--faint)">sin proveedor registrado</div>')+'</div>'
     +'<div class="qty"><div class="big '+qcls+'">'+(+i.cantidad)+'</div><div class="min">mínimo '+(i.stock_seguridad!=null?+i.stock_seguridad:'—')+(falta>0?' · faltan '+falta:'')+'</div></div></div>';
@@ -191,7 +191,7 @@ function renderTabla(){
   list.slice(0,600).forEach(i=>{
     const b=i.estado==='critico'?'st-critico':(i.estado==='bajo'?'st-bajo':'st-ok');
     const et=i.estado==='critico'?'Crítico':(i.estado==='bajo'?'Bajo':'OK');
-    h+='<tr><td>'+esc(i.nombre)+(!i.mapeado?' <span class="badge-nm">sin mapear</span>':'')+editBtn(i)+'</td>'
+    h+='<tr><td>'+esc(i.nombre)+(!i.mapeado?' '+mapBtn(i):'')+editBtn(i)+'</td>'
       +'<td style="color:var(--muted)">'+esc(i.proveedor&&i.proveedor!=='-'?i.proveedor:'—')+'</td>'
       +'<td style="text-align:right;font-weight:700;font-variant-numeric:tabular-nums">'+(+i.cantidad)+'</td>'
       +'<td style="text-align:right;color:var(--muted);font-variant-numeric:tabular-nums">'+(i.stock_seguridad!=null?+i.stock_seguridad:'—')+'</td>'
@@ -211,6 +211,64 @@ async function editarNombre(el){
   const n=nuevo.trim(); if(!n || n===actual) return;
   try{ await rpc('smi_stock_editar_nombre',{p_clave:CLAVE,p_producto:prod,p_nombre:n}); await cargar(); }
   catch(e){ alert('Error: '+e.message); }
+}
+
+/* ───── mapear al diccionario ───── */
+const CATS_MAP=['Insumo','Medicamento','Sutura'];
+function mapBtn(i){
+  return '<span class="badge-nm" style="cursor:pointer;background:#FBE9EB;color:var(--neg)" data-prod="'+esc(i.producto)+'" onclick="event.stopPropagation();abrirMapeo(this)" title="Mapear al diccionario">sin mapear · mapear ✎</span>';
+}
+function palabraDom(prod){
+  const skip=new Set(['INS','MED','SUT','KIT','REF','CTRL','VIT','VAL','SET','DE','LA','EL','CON','SIN','PARA']);
+  const toks=(prod||'').toUpperCase().split(/[^A-ZÁÉÍÓÚÑ0-9]+/).filter(Boolean);
+  for(const t of toks){ if(/^\d+$/.test(t)||t.length<3||skip.has(t)) continue; return t.replace(/[0-9]/g,''); }
+  return toks[0]||'';
+}
+function abrirMapeo(el){
+  const prod=el.dataset.prod;
+  const it=ITEMS.find(x=>x.producto===prod)||{producto:prod};
+  const nombrePre=(it.nombre && it.nombre!==prod)?it.nombre:prod;
+  const ov=document.createElement('div');
+  ov.style.cssText='position:fixed;inset:0;background:rgba(28,23,25,.55);display:flex;align-items:center;justify-content:center;z-index:99999;padding:14px';
+  ov.innerHTML='<div style="background:var(--card,#fff);border-radius:14px;padding:22px;width:min(94vw,420px);box-shadow:0 12px 40px rgba(0,0,0,.28)">'
+    +'<div style="font-family:var(--serif,Georgia),serif;font-size:20px;font-weight:600;margin-bottom:2px">Mapear producto</div>'
+    +'<div style="font-size:12px;color:var(--muted,#857479);margin-bottom:14px">Lo enlaza al diccionario para verlo con nombre limpio y poder cruzarlo.</div>'
+    +'<div style="font-size:10.5px;color:var(--muted);text-transform:uppercase;letter-spacing:.05em;font-weight:700;margin-bottom:3px">Nombre en Medilink</div>'
+    +'<div style="font-size:13px;background:var(--tint,#f7f0f1);border-radius:8px;padding:8px 10px;margin-bottom:12px;word-break:break-word">'+esc(prod)+'</div>'
+    +'<label style="font-size:11px;color:var(--muted);font-weight:700">Nombre limpio (como debe verse)</label>'
+    +'<input id="__mpNom" style="width:100%;box-sizing:border-box;padding:10px 11px;border:1px solid var(--line,#e0d7d9);border-radius:9px;font-size:14px;margin:4px 0 12px">'
+    +'<div style="display:flex;gap:10px;margin-bottom:12px">'
+    +'<div style="flex:1"><label style="font-size:11px;color:var(--muted);font-weight:700">Categoría</label>'
+    +'<select id="__mpCat" style="width:100%;box-sizing:border-box;padding:10px 11px;border:1px solid var(--line,#e0d7d9);border-radius:9px;font-size:14px;margin-top:4px">'
+    +CATS_MAP.map(c=>'<option>'+c+'</option>').join('')+'</select></div>'
+    +'<div style="flex:1"><label style="font-size:11px;color:var(--muted);font-weight:700">Palabra dominante</label>'
+    +'<input id="__mpPal" style="width:100%;box-sizing:border-box;padding:10px 11px;border:1px solid var(--line,#e0d7d9);border-radius:9px;font-size:14px;margin-top:4px;text-transform:uppercase"></div>'
+    +'</div>'
+    +'<div id="__mpMsg" style="font-size:12.5px;min-height:16px;margin-bottom:6px"></div>'
+    +'<div style="display:flex;gap:8px">'
+    +'<button id="__mpCancel" type="button" style="flex:1;padding:10px;border:1px solid var(--line,#e0d7d9);background:#fff;border-radius:9px;font-weight:600;cursor:pointer">Cancelar</button>'
+    +'<button id="__mpOk" type="button" style="flex:1;padding:10px;border:none;background:linear-gradient(120deg,var(--deep,#b22030),var(--crimson,#cd1d52));color:#fff;border-radius:9px;font-weight:700;cursor:pointer">Mapear</button>'
+    +'</div></div>';
+  document.body.appendChild(ov);
+  const nom=ov.querySelector('#__mpNom'),cat=ov.querySelector('#__mpCat'),pal=ov.querySelector('#__mpPal'),
+        msg=ov.querySelector('#__mpMsg'),ok=ov.querySelector('#__mpOk'),cancel=ov.querySelector('#__mpCancel');
+  nom.value=nombrePre; pal.value=palabraDom(prod);
+  if(/(^|-)MED|MEDICAMENTO|COMPRIMIDO|AMPOLLA|C[AÁ]PSULA/i.test(prod)) cat.value='Medicamento';
+  else if(/(^|-)SUT|SUTURA|VICRYL|PROLENE|MONOCRYL|NYLON|SEDA/i.test(prod)) cat.value='Sutura';
+  else cat.value='Insumo';
+  setTimeout(()=>nom.focus(),40);
+  function cerrar(){ ov.remove(); }
+  cancel.onclick=cerrar;
+  ov.addEventListener('click',e=>{ if(e.target===ov) cerrar(); });
+  ok.onclick=async()=>{
+    const n=nom.value.trim(), p=(pal.value.trim()||n.split(/\s+/)[0]);
+    if(!n){ nom.focus(); return; }
+    ok.disabled=true; msg.style.color='var(--muted)'; msg.textContent='Guardando…';
+    try{
+      await rpc('smi_stock_mapear',{p_clave:CLAVE,p_producto:prod,p_nombre:n,p_categoria:cat.value,p_palabra:p});
+      cerrar(); await cargar();
+    }catch(e){ msg.style.color='var(--neg)'; msg.textContent='Error: '+(e&&e.message?e.message:e); ok.disabled=false; }
+  };
 }
 
 /* ───── CSV ───── */
