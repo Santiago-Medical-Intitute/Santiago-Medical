@@ -1,0 +1,167 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Entregas · Bodega Pabellón · SMI</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:wght@500;600;700&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+:root{
+  --crimson:#CD1D52; --bright:#E33C3B; --deep:#B22030;
+  --ink:#1C1719; --muted:#857479; --faint:#A99CA0;
+  --bg:#FAF7F6; --card:#FFFFFF; --line:#ECE0E2; --tint:#F7F0F1;
+  --grad:linear-gradient(120deg,var(--deep),var(--crimson) 55%,var(--bright));
+  --pos:#1E7A4D; --neg:#C0202F; --warn:#B7791F; --info:#3B6FB3;
+  --pab1:#3B6FB3; --pab2:#9B3A8E; --pab3:#1E7A4D; --recu:#B7791F;
+  --serif:'Cormorant Garamond',Georgia,serif; --sans:'Inter',system-ui,sans-serif;
+}
+*{box-sizing:border-box}
+body{margin:0;background:var(--bg);color:var(--ink);font-family:var(--sans);font-size:14px;line-height:1.5;-webkit-font-smoothing:antialiased}
+.wrap{max-width:1100px;margin:0 auto;padding:18px 16px 64px}
+
+#gate{max-width:380px;margin:12vh auto 0;background:var(--card);border:1px solid var(--line);border-radius:18px;padding:30px 26px;text-align:center;box-shadow:0 12px 40px -22px rgba(28,23,25,.4)}
+#gate h2{font-family:var(--serif);font-weight:600;font-size:24px;margin:0 0 4px}
+#gate p{color:var(--muted);font-size:13px;margin:0 0 18px}
+#gate input{width:100%;padding:13px 14px;border:1px solid var(--line);border-radius:11px;font-family:var(--sans);font-size:15px;text-align:center;letter-spacing:.04em}
+#gate input:focus{outline:none;border-color:var(--crimson)}
+#gate button{width:100%;margin-top:12px;border:0;border-radius:11px;padding:13px;font-family:var(--sans);font-size:15px;font-weight:600;color:#fff;background:var(--grad);cursor:pointer}
+#gateMsg{color:var(--neg);font-size:13px;margin-top:10px;min-height:18px}
+#app{display:none}
+
+.hdr{display:flex;align-items:center;justify-content:space-between;padding-bottom:14px;margin-bottom:16px;border-bottom:1px solid var(--line);flex-wrap:wrap;gap:10px}
+.hdr h1{font-family:var(--serif);font-weight:600;font-size:26px;margin:0}
+.hdr .sub{font-size:12.5px;color:var(--muted)}
+.hdr-right{display:flex;align-items:center;gap:12px}
+.who{font-size:12px;color:var(--muted)}
+.live{font-size:11.5px;color:var(--pos);font-weight:600;display:flex;align-items:center;gap:5px}
+.live .dot{width:8px;height:8px;border-radius:50%;background:var(--pos);animation:pulse 1.6s infinite}
+@keyframes pulse{0%,100%{opacity:1}50%{opacity:.3}}
+.hdr-btn{border:1px solid var(--line);background:var(--card);border-radius:9px;padding:7px 12px;font-size:12.5px;font-weight:600;cursor:pointer;color:var(--ink);font-family:var(--sans)}
+
+.grupo{margin-bottom:22px}
+.grupo-h{display:flex;align-items:center;gap:9px;font-family:var(--serif);font-weight:700;font-size:19px;margin:0 0 10px}
+.pin{color:#fff;border-radius:8px;padding:3px 11px;font-family:var(--sans);font-size:13px;font-weight:700}
+.pin.p1{background:var(--pab1)} .pin.p2{background:var(--pab2)} .pin.p3{background:var(--pab3)} .pin.re{background:var(--recu)}
+.card{background:var(--card);border:1px solid var(--line);border-left:4px solid var(--crimson);border-radius:12px;padding:13px 15px;margin-bottom:9px;display:flex;justify-content:space-between;align-items:center;gap:14px}
+.info .ins{font-weight:700;font-size:16px}
+.info .cant{color:var(--crimson);font-weight:700}
+.info .pac{font-size:12.5px;color:var(--muted);margin-top:2px}
+.info .ped{font-size:11.5px;color:var(--faint);margin-top:3px}
+.entregar{border:0;border-radius:10px;padding:12px 18px;font-family:var(--sans);font-size:14px;font-weight:700;color:#fff;background:linear-gradient(120deg,#166b41,var(--pos));cursor:pointer;white-space:nowrap}
+.entregar:active{transform:scale(.97)}
+.empty{background:var(--card);border:1px dashed var(--line);border-radius:14px;padding:40px 20px;text-align:center;color:var(--muted)}
+.empty .big{font-size:40px;margin-bottom:8px}
+.foot{margin-top:24px;text-align:center;color:var(--faint);font-size:12px}
+</style>
+</head>
+<body>
+
+<div id="gate">
+  <h2>Entregas de Bodega</h2>
+  <p>Bodega de Pabellón · Ingrese su clave</p>
+  <input type="password" id="clave" placeholder="Clave" autocomplete="off">
+  <button id="entrar">Ingresar</button>
+  <div id="gateMsg"></div>
+</div>
+
+<div id="app" class="wrap">
+  <div class="hdr">
+    <div>
+      <h1>Entregas de Bodega</h1>
+      <div class="sub">Pedidos de insumos desde los pabellones · entrega mano a mano</div>
+    </div>
+    <div class="hdr-right">
+      <span class="live"><span class="dot"></span>en línea</span>
+      <span class="who" id="whoTxt"></span>
+      <button class="hdr-btn" onclick="cargar()">↻ Actualizar</button>
+    </div>
+  </div>
+  <div id="cola"></div>
+  <div class="foot">La entrega descuenta el insumo del pedido y queda registrada con tu nombre y la hora. El cobro lo valida aparte la Enfermera Jefe.</div>
+</div>
+
+<script>
+const SUPA_URL='https://rhpguniznuhljiigwetq.supabase.co';
+const SUPA_KEY='sb_publishable_lVaI9a2wWFa0PSL3edPiRA_cVMlXDwG';
+const $=id=>document.getElementById(id);
+const esc=s=>(s||'').replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
+let CLAVE='', SESION='', COLA=[], timer=null;
+
+async function rpc(fn,body){
+  const r=await fetch(SUPA_URL+'/rest/v1/rpc/'+fn,{method:'POST',
+    headers:{'apikey':SUPA_KEY,'Authorization':'Bearer '+SUPA_KEY,'Content-Type':'application/json'},
+    body:JSON.stringify(body)});
+  if(!r.ok) throw new Error(await r.text());
+  return r.json();
+}
+
+$('entrar').onclick=entrar;
+$('clave').addEventListener('keydown',e=>{if(e.key==='Enter')entrar();});
+async function entrar(){
+  const c=$('clave').value.trim(); if(!c) return;
+  $('gateMsg').textContent='Verificando…';
+  try{
+    const u=await rpc('smi_login_bodega',{p_clave:c});
+    const usr=Array.isArray(u)?u[0]:u;
+    if(!usr || !usr.nombre){ $('gateMsg').textContent='Esa clave no tiene acceso a Entregas de Bodega.'; return; }
+    CLAVE=c; SESION=usr.nombre; $('whoTxt').textContent=SESION;
+    $('gate').style.display='none'; $('app').style.display='block';
+    await cargar();
+    timer=setInterval(cargar, 12000);   // refresco automático cada 12 s
+  }catch(e){ $('gateMsg').textContent='Error de conexión.'; }
+}
+
+async function cargar(){
+  try{ const d=await rpc('smi_entregas_pendientes',{p_clave:CLAVE}); COLA=Array.isArray(d)?d:[]; }
+  catch(e){ COLA=[]; }
+  render();
+}
+
+function hhmm(t){ if(!t) return ''; const d=new Date(t); return String(d.getHours()).padStart(2,'0')+':'+String(d.getMinutes()).padStart(2,'0'); }
+function lugarDe(x){
+  if(x.caso_estado==='en_recuperacion') return {clave:'recu·'+(x.cama||'—'), cls:'re', txt:'Recuperación'+(x.cama?' · '+x.cama:'')};
+  const p=x.pabellon||'—';
+  return {clave:'pab·'+p, cls:(p===1?'p1':p===2?'p2':'p3'), txt:'Pabellón '+p};
+}
+
+function render(){
+  if(!COLA.length){
+    $('cola').innerHTML='<div class="empty"><div class="big">✓</div>No hay pedidos pendientes de entrega.</div>';
+    return;
+  }
+  // agrupar por lugar (pabellón o cama de recuperación)
+  const grupos={};
+  COLA.forEach(x=>{ const l=lugarDe(x); (grupos[l.clave]=grupos[l.clave]||{l:l,items:[]}).items.push(x); });
+  let h='';
+  Object.values(grupos).forEach(g=>{
+    h+='<div class="grupo"><div class="grupo-h"><span class="pin '+g.l.cls+'">'+esc(g.l.txt)+'</span>'
+      +'<span style="color:var(--muted);font-size:13px;font-weight:400">'+g.items.length+' pedido'+(g.items.length!==1?'s':'')+'</span></div>';
+    g.items.forEach(x=>{
+      h+='<div class="card">'
+        +'<div class="info"><div class="ins"><span class="cant">'+(+x.cantidad)+' ×</span> '+esc(x.descripcion)+'</div>'
+        +'<div class="pac">'+esc(x.paciente||'—')+' · '+esc(x.folio||'')+' · '+esc(x.cirugia||'')+'</div>'
+        +'<div class="ped">pedido por '+esc(x.registrado_por||'—')+' · '+hhmm(x.registrado_at)+'</div></div>'
+        +'<button class="entregar" onclick="entregar(\''+x.id+'\')">✓ Entregar</button>'
+        +'</div>';
+    });
+    h+='</div>';
+  });
+  $('cola').innerHTML=h;
+}
+
+async function entregar(id){
+  const x=COLA.find(i=>i.id===id)||{};
+  if(!confirm('Entregar '+(+x.cantidad)+' × '+(x.descripcion||'')+'\n\npara '+lugarDe(x).txt+' — '+(x.paciente||'')+'?\n\nQueda registrado a tu nombre.')) return;
+  try{
+    await rpc('smi_extra_entregar',{p_clave:CLAVE,p_extra_id:id});
+    await cargar();
+  }catch(e){
+    alert('No se pudo registrar la entrega:\n\n'+(e&&e.message?e.message:e));
+    await cargar();
+  }
+}
+</script>
+</body>
+</html>
