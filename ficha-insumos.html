@@ -143,6 +143,7 @@ const $=id=>document.getElementById(id);
 let CLAVE='', SESION='', CAT={cirujanos:[],cirugias:[],fichas:[]}, FICHA=null, MARKUP=2.5;
 let CIR='', CX='';
 const PISO_INS=150;  /* piso: el arancel de cada insumo no baja de $150 */
+const NOCOSTO = new URLSearchParams(location.search).get('nocosto')==='1'; /* Bodega (Christian): oculta el costo, deja el arancel */
 
 const clp=n=>'$'+Math.round(+n||0).toLocaleString('es-CL');
 const esc=s=>(s||'').replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
@@ -166,6 +167,7 @@ async function entrar(){
     if(!usr || !(usr.puede_operaciones || usr.puede_director)){ $('gateMsg').textContent='Su clave no tiene acceso a este panel.'; return; }
     CLAVE=c; SESION=usr.nombre; $('whoTxt').textContent=SESION;
     $('gate').style.display='none'; $('app').style.display='block';
+    if(NOCOSTO){ const mk=document.querySelector('.mk-wrap'); if(mk) mk.style.display='none'; }
     await cargarCat();
   }catch(e){ $('gateMsg').textContent='Error de conexión.'; }
 }
@@ -207,7 +209,11 @@ function renderMain(){
   function grupo(titulo, arr){
     if(!arr.length) return {html:'',ar:0,co:0};
     let ar=0, co=0;
-    let g='<div class="grp-h">'+titulo+'</div><table class="it"><tr><th>Insumo</th><th class="r">Costo unit.</th><th class="r">Cant.</th><th class="r">Subtotal costo</th><th class="r">Arancel línea</th><th></th></tr>';
+    let g='<div class="grp-h">'+titulo+'</div><table class="it"><tr><th>Insumo</th>'
+      +(NOCOSTO?'':'<th class="r">Costo unit.</th>')
+      +'<th class="r">Cant.</th>'
+      +(NOCOSTO?'':'<th class="r">Subtotal costo</th>')
+      +'<th class="r">Arancel línea</th><th></th></tr>';
     arr.forEach(i=>{
       const cu=+i.costo_unitario||0, cant=+i.cantidad||0;
       const bruto=Math.round(cu*MARKUP);
@@ -215,9 +221,9 @@ function renderMain(){
       const alinea=au*cant;
       ar+=alinea; co+=cant*cu;
       g+='<tr><td>'+esc(i.nombre)+'</td>'
-        +'<td class="r">'+clp(cu)+'</td>'
+        +(NOCOSTO?'':'<td class="r">'+clp(cu)+'</td>')
         +'<td class="r"><input class="qin" type="number" min="0" step="1" value="'+cant+'" onchange="cambiarCant('+i.id+',this.value)"></td>'
-        +'<td class="r">'+clp(cant*cu)+'</td>'
+        +(NOCOSTO?'':'<td class="r">'+clp(cant*cu)+'</td>')
         +'<td class="r"><b>'+clp(alinea)+'</b>'+(bruto<PISO_INS?' <span class="piso">piso $150</span>':'')+'</td>'
         +'<td class="r"><span class="del" onclick="quitar('+i.id+')" title="Quitar">×</span></td></tr>';
     });
@@ -235,7 +241,7 @@ function renderMain(){
     +'<div class="tot"><div class="l">Arancel Insumos (×'+mk+')</div><div class="v aran">'+clp(arIns)+'</div></div>'
     +'<div class="tot"><div class="l">Arancel Anestesia (×'+mk+')</div><div class="v aran">'+clp(arAne)+'</div></div>'
     +'<div class="tot"><div class="l">Arancel TOTAL</div><div class="v aran">'+clp(arIns+arAne)+'</div></div></div>';
-  h+='<div class="trace">Costo real de bodega (Medilink): Insumos '+clp(coIns)+' · Anestesia '+clp(coAne)+'. El arancel de Insumos es el precio de lista de esta cirugía para este cirujano; la Anestesia va como bloque aparte.</div>';
+  h+='<div class="trace">'+(NOCOSTO?'El arancel de Insumos es el precio de lista de esta cirugía para este cirujano; la Anestesia va como bloque aparte.':'Costo real de bodega (Medilink): Insumos '+clp(coIns)+' · Anestesia '+clp(coAne)+'. El arancel de Insumos es el precio de lista de esta cirugía para este cirujano; la Anestesia va como bloque aparte.')+'</div>';
   if(items.length) h+='<div><button class="btn-print" onclick="printChecklist()">🖨️ Descargar checklist (2 copias, sin valores)</button></div>';
   h+='</div></div>';
   $('main').innerHTML=h;
