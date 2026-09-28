@@ -78,6 +78,7 @@ body{margin:0;background:var(--bg);color:var(--ink);font-family:var(--sans);font
         <button class="tab active" data-tab="casos"  onclick="activar('casos')">Casos de la semana</button>
         <button class="tab"        data-tab="ficha"  onclick="activar('ficha')">Ficha de Insumos</button>
         <button class="tab"        data-tab="bodega" onclick="activar('bodega')">Bodega · Stock</button>
+        <button class="tab"        data-tab="salidas" onclick="activar('salidas')">Salidas</button>
       </div>
     </div>
   </div>
@@ -86,6 +87,7 @@ body{margin:0;background:var(--bg);color:var(--ink);font-family:var(--sans);font
     <iframe id="fr-casos"  data-src="casos.html"></iframe>
     <iframe id="fr-ficha"  data-src="ficha-insumos.html"></iframe>
     <iframe id="fr-bodega" data-src="bodega.html"></iframe>
+    <iframe id="fr-salidas" data-src="salidas.html"></iframe>
   </div>
 </div>
 
@@ -121,7 +123,7 @@ async function entrar(){
 }
 
 /* ── PESTAÑAS + auto-login del iframe ── */
-const IFRAMES={casos:'fr-casos', ficha:'fr-ficha', bodega:'fr-bodega'};
+const IFRAMES={casos:'fr-casos', ficha:'fr-ficha', bodega:'fr-bodega', salidas:'fr-salidas'};
 let TAB_ACTUAL='';
 
 function activar(tab){
