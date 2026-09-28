@@ -45,6 +45,8 @@ body{margin:0;background:var(--bg);color:var(--ink);font-family:var(--sans);font
 .pin{color:#fff;border-radius:8px;padding:3px 11px;font-family:var(--sans);font-size:13px;font-weight:700}
 .pin.p1{background:var(--pab1)} .pin.p2{background:var(--pab2)} .pin.p3{background:var(--pab3)} .pin.re{background:var(--recu)}
 .card{background:var(--card);border:1px solid var(--line);border-left:4px solid var(--crimson);border-radius:12px;padding:13px 15px;margin-bottom:9px;display:flex;justify-content:space-between;align-items:center;gap:14px}
+.card.done{border-left-color:var(--pos);opacity:.7;background:#F6FBF8}
+.done-badge{color:var(--pos);font-weight:700;font-size:13.5px;white-space:nowrap}
 .info .ins{font-weight:700;font-size:16px}
 .info .cant{color:var(--crimson);font-weight:700}
 .info .pac{font-size:12.5px;color:var(--muted);margin-top:2px}
@@ -128,23 +130,37 @@ function lugarDe(x){
 
 function render(){
   if(!COLA.length){
-    $('cola').innerHTML='<div class="empty"><div class="big">✓</div>No hay pedidos pendientes de entrega.</div>';
+    $('cola').innerHTML='<div class="empty"><div class="big">✓</div>No hay pedidos ni entregas en casos activos.</div>';
     return;
   }
-  // agrupar por lugar (pabellón o cama de recuperación)
+  // agrupar por lugar (pabellón o cama de recuperación / habitación)
   const grupos={};
   COLA.forEach(x=>{ const l=lugarDe(x); (grupos[l.clave]=grupos[l.clave]||{l:l,items:[]}).items.push(x); });
   let h='';
   Object.values(grupos).forEach(g=>{
+    // pendientes primero, luego entregados
+    g.items.sort((a,b)=>(a.entregado_at?1:0)-(b.entregado_at?1:0));
+    const pend=g.items.filter(i=>!i.entregado_at).length;
+    const ent=g.items.length-pend;
+    const resumen=(pend?pend+' pendiente'+(pend!==1?'s':''):'todo entregado')+(ent?' · '+ent+' entregado'+(ent!==1?'s':''):'');
     h+='<div class="grupo"><div class="grupo-h"><span class="pin '+g.l.cls+'">'+esc(g.l.txt)+'</span>'
-      +'<span style="color:var(--muted);font-size:13px;font-weight:400">'+g.items.length+' pedido'+(g.items.length!==1?'s':'')+'</span></div>';
+      +'<span style="color:var(--muted);font-size:13px;font-weight:400">'+resumen+'</span></div>';
     g.items.forEach(x=>{
-      h+='<div class="card">'
-        +'<div class="info"><div class="ins"><span class="cant">'+(+x.cantidad)+' ×</span> '+esc(x.descripcion)+'</div>'
-        +'<div class="pac">'+esc(x.paciente||'—')+' · '+esc(x.folio||'')+' · '+esc(x.cirugia||'')+'</div>'
-        +'<div class="ped">pedido por '+esc(x.registrado_por||'—')+' · '+hhmm(x.registrado_at)+'</div></div>'
-        +'<button class="entregar" onclick="entregar(\''+x.id+'\')">✓ Entregar</button>'
-        +'</div>';
+      if(x.entregado_at){
+        h+='<div class="card done">'
+          +'<div class="info"><div class="ins"><span class="cant">'+(+x.cantidad)+' ×</span> '+esc(x.descripcion)+'</div>'
+          +'<div class="pac">'+esc(x.paciente||'—')+' · '+esc(x.folio||'')+'</div>'
+          +'<div class="ped">✓ entregado por '+esc(x.entregado_por||'—')+' · '+hhmm(x.entregado_at)+'</div></div>'
+          +'<div class="done-badge">✓ Entregado</div>'
+          +'</div>';
+      } else {
+        h+='<div class="card">'
+          +'<div class="info"><div class="ins"><span class="cant">'+(+x.cantidad)+' ×</span> '+esc(x.descripcion)+'</div>'
+          +'<div class="pac">'+esc(x.paciente||'—')+' · '+esc(x.folio||'')+' · '+esc(x.cirugia||'')+'</div>'
+          +'<div class="ped">pedido por '+esc(x.registrado_por||'—')+' · '+hhmm(x.registrado_at)+'</div></div>'
+          +'<button class="entregar" onclick="entregar(\''+x.id+'\')">✓ Entregar</button>'
+          +'</div>';
+      }
     });
     h+='</div>';
   });
