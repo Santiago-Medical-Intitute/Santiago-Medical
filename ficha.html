@@ -411,19 +411,22 @@ const EV_LABEL={
   duracion_corregida:'Duración corregida',
   extra_registrado:'Extra registrado', extra_validado:'Extra validado',
   extra_rechazado:'Extra rechazado', extra_pendiente:'Extra devuelto a pendiente',
-  extra_eliminado:'Extra eliminado', extra_precio_corregido:'Precio de extra corregido'
+  extra_eliminado:'Extra eliminado', extra_precio_corregido:'Precio de extra corregido',
+  extra_entregado:'Extra entregado a pabellón'
 };
 const EV_KIND={
   cotizacion_perdida:'neg', descuento_rechazada:'neg', extra_rechazado:'neg',
   extra_eliminado:'neg', fin_cirugia:'done',
   extra_registrado:'warn', estado_en_recuperacion:'warn', descuento_solicitada:'warn',
   extra_pendiente:'pend', duracion_corregida:'warn', extra_precio_corregido:'warn',
-  total_modificado:'warn', reprogramado:'warn'
+  total_modificado:'warn', reprogramado:'warn', extra_entregado:'done'
 };
 function detalleTxt(dt){
   if(!dt) return '';
   const p=[];
   if(dt.descripcion) p.push(dt.descripcion);
+  if(dt.cantidad!=null) p.push('×'+dt.cantidad);
+  if(dt.pedido_por) p.push('pedido por '+dt.pedido_por);
   if(dt.nombre) p.push(dt.nombre+(dt.rol?' ('+rolLabel(dt.rol)+')':''));
   if(dt.pabellon) p.push('Pab '+dt.pabellon);
   if(dt.precio_total!=null) p.push(clp(dt.precio_total));
