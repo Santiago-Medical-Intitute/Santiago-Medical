@@ -28,6 +28,33 @@ body{margin:0;background:var(--bg);color:var(--ink);font-family:var(--sans);font
 #gateMsg{color:var(--neg);font-size:13px;margin-top:10px;min-height:18px}
 #app{display:none}
 
+/* ── vista semana (solo lectura) ── */
+.viewtabs{display:flex;gap:2px;margin:10px 0 14px;border-bottom:1px solid var(--line)}
+.viewtabs .vt{border:0;background:none;padding:9px 16px;font-family:var(--sans);font-size:14px;font-weight:600;color:var(--muted);cursor:pointer;border-bottom:3px solid transparent;margin-bottom:-1px}
+.viewtabs .vt:hover{color:var(--ink)}
+.viewtabs .vt.on{color:var(--crimson);border-bottom-color:var(--crimson)}
+.week-nav{display:flex;align-items:center;gap:10px;margin-bottom:14px;flex-wrap:wrap}
+.week-nav button{border:1px solid var(--line);background:var(--card);border-radius:8px;padding:7px 14px;font-family:var(--sans);font-size:13px;font-weight:600;cursor:pointer;color:var(--ink)}
+.week-nav button:hover{border-color:var(--crimson);color:var(--crimson)}
+.week-nav .week-label{font-family:var(--serif);font-weight:600;font-size:18px}
+.week-grid{display:grid;grid-template-columns:56px repeat(3,1fr);border:1px solid var(--line);border-radius:12px;overflow:hidden;background:var(--card)}
+.wg-corner{background:var(--tint);border-bottom:1px solid var(--line);border-right:1px solid var(--line)}
+.wg-pab-hdr{padding:10px 8px;text-align:center;font-size:13px;font-weight:700;color:#fff;border-bottom:1px solid var(--line)}
+.wg-pab-hdr.p1{background:#3B6FB3} .wg-pab-hdr.p2{background:#9B3A8E} .wg-pab-hdr.p3{background:#1E7A4D}
+.wg-day{padding:8px 6px;font-size:12px;font-weight:600;color:var(--muted);text-align:center;border-bottom:1px solid var(--line);border-right:1px solid var(--line);background:var(--tint)}
+.wg-day.today{background:#FBF3E2;color:var(--warn)}
+.wg-cell{padding:4px;border-bottom:1px solid var(--line);border-right:1px solid var(--line);min-height:62px}
+.wg-cell:nth-child(4n){border-right:none}
+.wg-block{border-radius:6px;padding:5px 7px;margin-bottom:3px;font-size:11.5px;line-height:1.3}
+.wg-block.firme{background:#E4F1F1;border-left:3px solid #0E7C86}
+.wg-block.provisoria{background:#FBF3E2;border-left:3px solid var(--warn)}
+.wg-block.en-cirugia{background:#FBEBED;border-left:3px solid var(--neg)}
+.wg-block.finalizada{background:#E7F4ED;border-left:3px solid var(--pos);opacity:.75}
+.wg-block .wb-name{font-weight:600;color:var(--ink)}
+.wg-block .wb-info{color:var(--muted);font-size:10.5px}
+.wg-empty{color:var(--faint);text-align:center;padding:30px}
+@media(max-width:700px){.week-grid{grid-template-columns:46px repeat(3,1fr)} .wg-block{font-size:10.5px}}
+
 .hdr{display:flex;align-items:flex-end;justify-content:space-between;padding-bottom:14px;margin-bottom:6px;border-bottom:1px solid var(--line);flex-wrap:wrap;gap:12px}
 .hdr h1{font-family:var(--serif);font-weight:600;font-size:28px;margin:0}
 .hdr .sub{font-size:13px;color:var(--muted);margin-top:2px}
@@ -144,9 +171,18 @@ body{margin:0;background:var(--bg);color:var(--ink);font-family:var(--sans);font
     </div>
   </div>
 
-  <div id="porAsignar"></div>
-  <div class="sect-t">En recuperación ahora <span id="nPac"></span></div>
-  <div class="board" id="board"></div>
+  <div class="viewtabs">
+    <button id="vtRecu" class="vt on" onclick="verVista('recu')">Recuperación</button>
+    <button id="vtSem"  class="vt"    onclick="verVista('semana')">Semana quirúrgica</button>
+  </div>
+
+  <div id="recuView">
+    <div id="porAsignar"></div>
+    <div class="sect-t">En recuperación ahora <span id="nPac"></span></div>
+    <div class="board" id="board"></div>
+  </div>
+
+  <div id="semanaView" style="display:none"></div>
 
   <div class="foot">Recuperación · SMI · Controles: 6 cada 15 min, luego cada 30 min · Alta con Aldrete ≥ 9</div>
 </div>
@@ -162,6 +198,61 @@ const $=id=>document.getElementById(id);
 let CLAVE='', SESION='', CASOS=[], SEL=null;
 const CAMAS=['Cama 1','Cama 2','Cama 3','Cama 4','Cama 5','Cama 6'];
 const HABS=['Habitación 1','Habitación 2','Habitación 3'];
+/* ── vista semana quirúrgica (solo lectura) ── */
+const DIAS_C=['Dom','Lun','Mar','Mié','Jue','Vie','Sáb'];
+let SEM_OFFSET=0, SEM_CASOS=[], SEM_LOADED=false;
+function verVista(v){
+  const rec=(v==='recu');
+  $('recuView').style.display=rec?'block':'none';
+  $('semanaView').style.display=rec?'none':'block';
+  $('vtRecu').classList.toggle('on',rec);
+  $('vtSem').classList.toggle('on',!rec);
+  if(!rec && !SEM_LOADED) cargarSemana();
+}
+function getLunesSem(off){ const d=new Date(); d.setDate(d.getDate()-((d.getDay()+6)%7)+off*7); d.setHours(0,0,0,0); return d; }
+function fmtDateSem(d){ return d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0'); }
+function finHoraSem(hm,min){ if(!hm) return ''; const p=String(hm).slice(0,5).split(':').map(Number); const t=p[0]*60+p[1]+(+min||0); return String(Math.floor(t/60)%24).padStart(2,'0')+':'+String(t%60).padStart(2,'0'); }
+async function cargarSemana(){
+  const lunes=getLunesSem(SEM_OFFSET), dom=new Date(lunes); dom.setDate(dom.getDate()+6);
+  $('semanaView').innerHTML='<div class="wg-empty">Cargando…</div>';
+  try{ const d=await rpc('smi_casos_semana',{p_clave:CLAVE,p_desde:fmtDateSem(lunes),p_hasta:fmtDateSem(dom)}); SEM_CASOS=Array.isArray(d)?d:[]; }
+  catch(e){ SEM_CASOS=[]; }
+  SEM_LOADED=true; renderSemana();
+}
+function renderSemana(){
+  const lunes=getLunesSem(SEM_OFFSET), dom=new Date(lunes); dom.setDate(dom.getDate()+6);
+  const hoyStr=fmtDateSem(new Date()), dmes=d=>d.getDate()+'/'+(d.getMonth()+1);
+  let h='<div class="week-nav">'
+    +'<button onclick="SEM_OFFSET--;cargarSemana()">← Anterior</button>'
+    +'<span class="week-label">'+dmes(lunes)+' — '+dmes(dom)+'</span>'
+    +'<button onclick="SEM_OFFSET++;cargarSemana()">Siguiente →</button>'
+    +'<button onclick="SEM_OFFSET=0;cargarSemana()">Esta semana</button></div>';
+  h+='<div class="week-grid"><div class="wg-corner"></div>'
+    +'<div class="wg-pab-hdr p1">Pab 1</div><div class="wg-pab-hdr p2">Pab 2</div><div class="wg-pab-hdr p3">Pab 3</div>';
+  for(let i=0;i<6;i++){
+    const dia=new Date(lunes); dia.setDate(dia.getDate()+i); const dStr=fmtDateSem(dia);
+    h+='<div class="wg-day'+(dStr===hoyStr?' today':'')+'">'+DIAS_C[dia.getDay()]+'<br>'+dia.getDate()+'</div>';
+    for(let p=1;p<=3;p++){
+      h+='<div class="wg-cell">';
+      SEM_CASOS.filter(c=>c.fecha===dStr && c.pabellon===p).forEach(c=>{
+        const cot=c.cotizacion||{};
+        let cls='wg-block ';
+        if(c.estado==='en_cirugia') cls+='en-cirugia';
+        else if(c.estado==='finalizada') cls+='finalizada';
+        else if(c.estado_cot==='pagada') cls+='firme'; else cls+='provisoria';
+        h+='<div class="'+cls+'">'
+          +'<div class="wb-info" style="font-weight:700;color:var(--crimson);font-size:10px">'+esc(cot.folio||'')+'</div>';
+        if(c.hora_inicio_plan){ const hi=String(c.hora_inicio_plan).slice(0,5); h+='<div class="wb-info" style="font-weight:700;color:var(--ink)">🕐 '+hi+'–'+finHoraSem(hi,c.duracion_cotizada_min||0)+'</div>'; }
+        h+='<div class="wb-name">'+esc(cot.paciente||'—')+'</div>'
+          +'<div class="wb-info">'+esc(cot.cirugia||'')+' · '+esc(cot.cirujano||'')+'</div></div>';
+      });
+      h+='</div>';
+    }
+  }
+  h+='</div>';
+  if(!SEM_CASOS.length) h+='<div class="wg-empty">No hay cirugías en esta semana.</div>';
+  $('semanaView').innerHTML=h;
+}
 
 const clp=n=>'$'+Math.round(+n||0).toLocaleString('es-CL');
 const esc=s=>(s||'').replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
