@@ -59,7 +59,8 @@ tr:last-child td{border-bottom:0}
 .pcard{background:var(--card);border:1px solid var(--line);border-top:3px solid var(--line);border-radius:12px;padding:11px 13px}
 .pcard.p1{border-top-color:var(--pab1)} .pcard.p2{border-top-color:var(--pab2)} .pcard.p3{border-top-color:var(--pab3)}
 .pcard .ph{font-weight:700;font-size:12px;margin-bottom:5px;display:flex;justify-content:space-between;align-items:center}
-.pcard .pt{font-size:12.5px;white-space:pre-wrap;line-height:1.4}
+.pcard .pt{font-size:12.5px;line-height:1.5}
+.pcard .pt .rol{color:var(--muted);font-weight:600}
 .pcard .pm{font-size:9.5px;color:var(--faint);margin-top:4px}
 .pcard .ed{cursor:pointer;color:var(--muted);font-size:13px}
 @media(max-width:700px){.personal{grid-template-columns:1fr}}
@@ -172,7 +173,10 @@ function renderPersonal(){
   let h='';
   for(let p=1;p<=3;p++){
     const d=PERSONAL[p]||PERSONAL[String(p)]||{};
-    const txt = d.personal ? esc(d.personal)
+    const partes=[];
+    if(d.enfermero) partes.push('<span class="rol">Enfermero/a:</span> '+esc(d.enfermero));
+    if(d.tens) partes.push('<span class="rol">TENS:</span> '+esc(d.tens));
+    const txt = partes.length ? partes.join('<br>')
       : (PUEDE_EDITAR?'<span class="mut" style="font-style:italic">— sin asignar —</span>':'<span class="mut">—</span>');
     const meta = d.por ? '<div class="pm">— '+esc(d.por)+' · '+fechaCorta(d.at)+'</div>' : '';
     const ed = PUEDE_EDITAR ? '<span class="ed" onclick="editPersonal('+p+')" title="Editar personal">✎</span>' : '';
@@ -186,23 +190,27 @@ function editPersonal(pab){
   const d=PERSONAL[pab]||PERSONAL[String(pab)]||{};
   const ov=document.createElement('div');
   ov.style.cssText='position:fixed;inset:0;background:rgba(28,23,25,.55);display:flex;align-items:center;justify-content:center;z-index:99999;padding:14px';
+  const inpCss='width:100%;box-sizing:border-box;padding:10px 12px;border:1px solid var(--line);border-radius:10px;font-family:var(--sans);font-size:14px';
   ov.innerHTML='<div style="background:var(--card);border-radius:14px;padding:22px;width:min(94vw,460px);box-shadow:0 12px 40px rgba(0,0,0,.28)">'
     +'<div style="font-family:var(--serif),Georgia,serif;font-size:20px;font-weight:600;margin-bottom:2px">Personal · Pabellón '+pab+'</div>'
-    +'<div style="font-size:12.5px;color:var(--muted);margin-bottom:12px">Equipo destinado a este pabellón hoy</div>'
-    +'<textarea id="__perTa" rows="4" style="width:100%;box-sizing:border-box;padding:10px 12px;border:1px solid var(--line);border-radius:10px;font-family:var(--sans);font-size:14px;resize:vertical" placeholder="Ej: Arsenalera: … · Pabellonera: … · TENS: … · Anestesia: …"></textarea>'
-    +'<div id="__perMsg" style="font-size:12.5px;min-height:16px;margin:6px 2px 0"></div>'
+    +'<div style="font-size:12.5px;color:var(--muted);margin-bottom:14px">Enfermero/a y TENS destinados a este pabellón hoy</div>'
+    +'<label style="display:block;font-size:12px;font-weight:600;margin:0 2px 4px">Enfermero/a</label>'
+    +'<input id="__perEnf" type="text" style="'+inpCss+'" placeholder="Nombre del enfermero/a">'
+    +'<label style="display:block;font-size:12px;font-weight:600;margin:12px 2px 4px">TENS</label>'
+    +'<input id="__perTens" type="text" style="'+inpCss+'" placeholder="Nombre del TENS">'
+    +'<div id="__perMsg" style="font-size:12.5px;min-height:16px;margin:8px 2px 0"></div>'
     +'<div style="display:flex;gap:8px;margin-top:8px">'
     +'<button id="__perCancel" type="button" style="flex:1;padding:10px;border:1px solid var(--line);background:#fff;border-radius:9px;font-weight:600;cursor:pointer">Cancelar</button>'
     +'<button id="__perOk" type="button" style="flex:1;padding:10px;border:none;background:var(--grad);color:#fff;border-radius:9px;font-weight:700;cursor:pointer">Guardar</button>'
     +'</div></div>';
   document.body.appendChild(ov);
-  const ta=ov.querySelector('#__perTa'),msg=ov.querySelector('#__perMsg'),ok=ov.querySelector('#__perOk'),cancel=ov.querySelector('#__perCancel');
-  ta.value=d.personal||''; setTimeout(()=>ta.focus(),40);
+  const enf=ov.querySelector('#__perEnf'),tens=ov.querySelector('#__perTens'),msg=ov.querySelector('#__perMsg'),ok=ov.querySelector('#__perOk'),cancel=ov.querySelector('#__perCancel');
+  enf.value=d.enfermero||''; tens.value=d.tens||''; setTimeout(()=>enf.focus(),40);
   function cerrar(){ ov.remove(); }
   cancel.onclick=cerrar; ov.addEventListener('click',e=>{ if(e.target===ov) cerrar(); });
   ok.onclick=async()=>{
     ok.disabled=true; msg.style.color='var(--muted)'; msg.textContent='Guardando…';
-    try{ await rpc('smi_pabellon_personal_guardar',{p_clave:CLAVE,p_fecha:$('fecha').value,p_pabellon:pab,p_personal:ta.value}); cerrar(); await cargar(); }
+    try{ await rpc('smi_pabellon_personal_guardar',{p_clave:CLAVE,p_fecha:$('fecha').value,p_pabellon:pab,p_enfermero:enf.value,p_tens:tens.value}); cerrar(); await cargar(); }
     catch(e){ msg.style.color='var(--neg)'; msg.textContent='Error: '+(e&&e.message?e.message:e); ok.disabled=false; }
   };
 }
