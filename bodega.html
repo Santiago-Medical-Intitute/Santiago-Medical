@@ -65,6 +65,9 @@ table.inv td{padding:8px;border-bottom:1px solid var(--line);vertical-align:midd
 table.inv tr:hover td{background:var(--tint)}
 .st-badge{font-size:10px;font-weight:700;padding:2px 8px;border-radius:20px}
 .st-critico{background:#FBE0E5;color:var(--neg)} .st-bajo{background:#FBF0DA;color:var(--warn)} .st-ok{background:#E9EEE9;color:var(--pos)}
+.mkwrap{display:flex;align-items:center;gap:5px}
+.mkb{border:1px solid var(--line);background:var(--card);border-radius:8px;padding:5px 10px;font-size:12px;font-weight:700;cursor:pointer;color:var(--muted);font-family:var(--sans)}
+.mkb.on{background:var(--ink);color:#fff;border-color:var(--ink)}
 .empty{color:var(--muted);text-align:center;padding:34px;background:var(--card);border:1px dashed var(--line);border-radius:14px}
 .foot{margin-top:26px;text-align:center;color:var(--faint);font-size:12px}
 </style>
@@ -87,6 +90,9 @@ table.inv tr:hover td{background:var(--tint)}
     </div>
     <div class="hdr-right">
       <span class="who" id="whoTxt"></span>
+      <span class="mkwrap" id="mkwrap"><span style="font-size:11.5px;color:var(--muted);font-weight:600">Markup:</span>
+        <button class="mkb on" data-mk="2.5" onclick="setMarkupB(2.5)">2,5×</button>
+        <button class="mkb" data-mk="2.3" onclick="setMarkupB(2.3)">2,3×</button></span>
       <input type="file" id="csvFile" accept=".csv,.xls,.xlsx,.tsv,.txt,text/csv" style="display:none" onchange="subirCsv(this)">
       <button class="btn primary" onclick="document.getElementById('csvFile').click()">↑ Actualizar stock</button>
       <button class="btn" onclick="cargar()">↻ Recargar</button>
@@ -111,6 +117,10 @@ const SUPA_URL='https://rhpguniznuhljiigwetq.supabase.co';
 const SUPA_KEY='sb_publishable_lVaI9a2wWFa0PSL3edPiRA_cVMlXDwG';
 const $=id=>document.getElementById(id);
 let CLAVE='', SESION='', ITEMS=[], ACTUALIZADO=null;
+const NOCOSTO = new URLSearchParams(location.search).get('nocosto')==='1'; /* Bodega de Christian: sin precios */
+let MARKUP=2.5; const PISO_INS=150;
+function arancelDe(cu){ return Math.max(PISO_INS, Math.round((+cu||0)*MARKUP)); }
+function setMarkupB(m){ MARKUP=+m; document.querySelectorAll('.mkb').forEach(b=>b.classList.toggle('on',+b.dataset.mk===MARKUP)); renderTabla(); }
 
 const clp=n=>'$'+Math.round(+n||0).toLocaleString('es-CL');
 const esc=s=>(s||'').replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
@@ -135,6 +145,7 @@ async function entrar(){
     if(!usr || !(usr.puede_operaciones || usr.puede_director)){ $('gateMsg').textContent='Su clave no tiene acceso a este panel.'; return; }
     CLAVE=c; SESION=usr.nombre; $('whoTxt').textContent=SESION;
     $('gate').style.display='none'; $('app').style.display='block';
+    if(NOCOSTO){ const m=$('mkwrap'); if(m) m.style.display='none'; }
     await cargar();
   }catch(e){ $('gateMsg').textContent='Error de conexión.'; }
 }
@@ -187,14 +198,20 @@ function renderTabla(){
   let list=ITEMS;
   if(q) list=ITEMS.filter(i=>(i.nombre||'').toLowerCase().includes(q)||(i.producto||'').toLowerCase().includes(q)||(i.proveedor||'').toLowerCase().includes(q));
   if(!ITEMS.length){ $('tabla').innerHTML='<div class="empty">No hay stock cargado. Usa <b>↑ Actualizar stock (CSV)</b> para subir el inventario de Medilink.</div>'; return; }
-  let h='<table class="inv"><tr><th>Producto</th><th>Proveedor</th><th style="text-align:right">Stock</th><th style="text-align:right">Mínimo</th><th>Estado</th></tr>';
+  const mkTxt=MARKUP.toString().replace('.',',');
+  let h='<table class="inv"><tr><th>Producto</th><th>Proveedor</th><th style="text-align:right">Stock</th><th style="text-align:right">Mínimo</th>'
+    +(NOCOSTO?'':'<th style="text-align:right">Costo</th><th style="text-align:right">Arancel ×'+mkTxt+'</th>')
+    +'<th>Estado</th></tr>';
   list.slice(0,600).forEach(i=>{
     const b=i.estado==='critico'?'st-critico':(i.estado==='bajo'?'st-bajo':'st-ok');
     const et=i.estado==='critico'?'Crítico':(i.estado==='bajo'?'Bajo':'OK');
+    const cu=+i.costo_unitario||0;
     h+='<tr><td>'+esc(i.nombre)+(!i.mapeado?' '+mapBtn(i):'')+editBtn(i)+'</td>'
       +'<td style="color:var(--muted)">'+esc(i.proveedor&&i.proveedor!=='-'?i.proveedor:'—')+'</td>'
       +'<td style="text-align:right;font-weight:700;font-variant-numeric:tabular-nums">'+(+i.cantidad)+'</td>'
       +'<td style="text-align:right;color:var(--muted);font-variant-numeric:tabular-nums">'+(i.stock_seguridad!=null?+i.stock_seguridad:'—')+'</td>'
+      +(NOCOSTO?'':'<td style="text-align:right;color:var(--muted);font-variant-numeric:tabular-nums">'+(cu>0?clp(cu):'—')+'</td>'
+        +'<td style="text-align:right;font-weight:700;color:var(--pos);font-variant-numeric:tabular-nums">'+(cu>0?clp(arancelDe(cu)):'—')+'</td>')
       +'<td><span class="st-badge '+b+'">'+et+'</span></td></tr>';
   });
   h+='</table>';
