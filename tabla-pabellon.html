@@ -1,0 +1,195 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Tabla de Pabellón · SMI</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:wght@500;600;700&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+:root{
+  --crimson:#CD1D52; --bright:#E33C3B; --deep:#B22030;
+  --ink:#1C1719; --muted:#857479; --faint:#A99CA0;
+  --bg:#FAF7F6; --card:#FFFFFF; --line:#ECE0E2; --tint:#F7F0F1;
+  --grad:linear-gradient(120deg,var(--deep),var(--crimson) 55%,var(--bright));
+  --pos:#1E7A4D; --neg:#C0202F; --warn:#B7791F; --info:#3B6FB3;
+  --pab1:#3B6FB3; --pab2:#9B3A8E; --pab3:#1E7A4D;
+  --serif:'Cormorant Garamond',Georgia,serif; --sans:'Inter',system-ui,sans-serif;
+}
+*{box-sizing:border-box}
+body{margin:0;background:var(--bg);color:var(--ink);font-family:var(--sans);font-size:14px;line-height:1.5;-webkit-font-smoothing:antialiased}
+.wrap{max-width:1250px;margin:0 auto;padding:18px 16px 64px}
+
+#gate{max-width:380px;margin:12vh auto 0;background:var(--card);border:1px solid var(--line);border-radius:18px;padding:30px 26px;text-align:center;box-shadow:0 12px 40px -22px rgba(28,23,25,.4)}
+#gate h2{font-family:var(--serif);font-weight:600;font-size:24px;margin:0 0 4px}
+#gate p{color:var(--muted);font-size:13px;margin:0 0 18px}
+#gate input{width:100%;padding:13px 14px;border:1px solid var(--line);border-radius:11px;font-family:var(--sans);font-size:15px;text-align:center;letter-spacing:.04em}
+#gate input:focus{outline:none;border-color:var(--crimson)}
+#gate button{width:100%;margin-top:12px;border:0;border-radius:11px;padding:13px;font-family:var(--sans);font-size:15px;font-weight:600;color:#fff;background:var(--grad);cursor:pointer}
+#gateMsg{color:var(--neg);font-size:13px;margin-top:10px;min-height:18px}
+#app{display:none}
+
+.hdr{display:flex;align-items:center;justify-content:space-between;padding-bottom:12px;margin-bottom:14px;border-bottom:1px solid var(--line);flex-wrap:wrap;gap:10px}
+.hdr h1{font-family:var(--serif);font-weight:600;font-size:26px;margin:0}
+.hdr .sub{font-size:12.5px;color:var(--muted)}
+.who{font-size:12px;color:var(--muted)}
+.nav{display:flex;align-items:center;gap:10px;margin-bottom:16px;flex-wrap:wrap}
+.nav button{border:1px solid var(--line);background:var(--card);border-radius:8px;padding:8px 14px;font-family:var(--sans);font-size:13px;font-weight:600;cursor:pointer;color:var(--ink)}
+.nav button:hover{border-color:var(--crimson);color:var(--crimson)}
+.nav .dia{font-family:var(--serif);font-weight:600;font-size:19px;min-width:220px}
+.nav input[type=date]{border:1px solid var(--line);border-radius:8px;padding:7px 10px;font-family:var(--sans);font-size:13px}
+.print-btn{margin-left:auto;border:1px solid var(--info);background:#EEF4FB;color:var(--info);border-radius:9px;padding:8px 15px;font-weight:700;cursor:pointer;font-family:var(--sans);font-size:13px}
+
+table{width:100%;border-collapse:collapse;font-size:12.5px;background:var(--card);border:1px solid var(--line);border-radius:12px;overflow:hidden}
+th{text-align:left;color:var(--muted);font-weight:600;font-size:10px;text-transform:uppercase;letter-spacing:.03em;padding:9px 9px;border-bottom:1px solid var(--line);background:var(--tint)}
+td{padding:9px 9px;border-bottom:1px solid var(--line);vertical-align:top}
+tr:last-child td{border-bottom:0}
+.pab{display:inline-block;color:#fff;border-radius:6px;padding:2px 8px;font-weight:700;font-size:11px}
+.pab.p1{background:var(--pab1)} .pab.p2{background:var(--pab2)} .pab.p3{background:var(--pab3)}
+.pac{font-weight:600}
+.mut{color:var(--muted)}
+.tag{font-size:10px;font-weight:700;border-radius:20px;padding:1px 7px}
+.tag.hosp{background:#E8F0FA;color:var(--info)} .tag.amb{background:#E9EEE9;color:var(--pos)}
+.est{font-size:10px;font-weight:700;border-radius:20px;padding:1px 7px;background:var(--tint);color:var(--muted)}
+.est.cir{background:#FBEBED;color:var(--neg)} .est.fin{background:#E7F4ED;color:var(--pos)}
+.obs{color:var(--warn);font-size:11.5px}
+.sinficha{color:var(--neg);font-size:10px;font-weight:700}
+.empty{color:var(--muted);text-align:center;padding:40px;background:var(--card);border:1px dashed var(--line);border-radius:14px}
+.foot{margin-top:22px;text-align:center;color:var(--faint);font-size:12px}
+#printHdr{display:none}
+
+@media print{
+  @page{size:landscape;margin:10mm}
+  body{background:#fff}
+  .wrap{max-width:100%;padding:0}
+  .hdr,.nav,.foot,.who{display:none !important}
+  #printHdr{display:block;font-family:var(--serif);font-size:20px;font-weight:700;margin-bottom:10px}
+  table{border:1px solid #999;font-size:11px}
+  th{background:#eee !important;-webkit-print-color-adjust:exact;print-color-adjust:exact}
+  td,th{padding:5px 6px}
+  .pab,.tag,.est{color:#000 !important;background:none !important;border:1px solid #999;padding:1px 5px}
+}
+</style>
+</head>
+<body>
+
+<div id="gate">
+  <h2>Tabla de Pabellón</h2>
+  <p>Programación quirúrgica · Ingrese su clave</p>
+  <input type="password" id="clave" placeholder="Clave" autocomplete="off">
+  <button id="entrar">Ingresar</button>
+  <div id="gateMsg"></div>
+</div>
+
+<div id="app" class="wrap">
+  <div class="hdr">
+    <div>
+      <h1>Tabla de Pabellón</h1>
+      <div class="sub">Santiago Medical Institute · Programación quirúrgica del día (solo lectura)</div>
+    </div>
+    <span class="who" id="whoTxt"></span>
+  </div>
+
+  <div class="nav">
+    <button onclick="moverDia(-1)">← Día anterior</button>
+    <span class="dia" id="diaLbl"></span>
+    <button onclick="moverDia(1)">Día siguiente →</button>
+    <button onclick="irHoy()">Hoy</button>
+    <input type="date" id="fecha" onchange="cargar()">
+    <button class="print-btn" onclick="window.print()">🖨 Imprimir</button>
+  </div>
+
+  <div id="printHdr"></div>
+  <div id="tabla"></div>
+  <div class="foot">Vista de solo lectura · Tomado de la agenda quirúrgica y la ficha prequirúrgica · No modifica nada.</div>
+</div>
+
+<script>
+const SUPA_URL='https://rhpguniznuhljiigwetq.supabase.co';
+const SUPA_KEY='sb_publishable_lVaI9a2wWFa0PSL3edPiRA_cVMlXDwG';
+const $=id=>document.getElementById(id);
+const esc=s=>(s==null?'':String(s)).replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
+let CLAVE='', SESION='', CASOS=[];
+const DIAS=['Domingo','Lunes','Martes','Miércoles','Jueves','Viernes','Sábado'];
+const MESES=['enero','febrero','marzo','abril','mayo','junio','julio','agosto','septiembre','octubre','noviembre','diciembre'];
+
+async function rpc(fn,body){
+  const r=await fetch(SUPA_URL+'/rest/v1/rpc/'+fn,{method:'POST',
+    headers:{'apikey':SUPA_KEY,'Authorization':'Bearer '+SUPA_KEY,'Content-Type':'application/json'},
+    body:JSON.stringify(body)});
+  if(!r.ok) throw new Error(await r.text());
+  return r.json();
+}
+
+$('entrar').onclick=entrar;
+$('clave').addEventListener('keydown',e=>{if(e.key==='Enter')entrar();});
+async function entrar(){
+  const c=$('clave').value.trim(); if(!c) return;
+  $('gateMsg').textContent='Verificando…';
+  try{
+    const u=await rpc('smi_login_lector',{p_clave:c});
+    const usr=Array.isArray(u)?u[0]:u;
+    if(!usr || !usr.nombre){ $('gateMsg').textContent='Clave sin acceso a la tabla.'; return; }
+    CLAVE=c; SESION=usr.nombre; $('whoTxt').textContent=SESION;
+    $('gate').style.display='none'; $('app').style.display='block';
+    irHoy();
+  }catch(e){ $('gateMsg').textContent='Error de conexión.'; }
+}
+
+function fmt(d){ return d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0'); }
+function irHoy(){ $('fecha').value=fmt(new Date()); cargar(); }
+function moverDia(n){ const d=new Date($('fecha').value+'T12:00:00'); d.setDate(d.getDate()+n); $('fecha').value=fmt(d); cargar(); }
+
+async function cargar(){
+  const f=$('fecha').value; if(!f) return;
+  const d=new Date(f+'T12:00:00');
+  $('diaLbl').textContent=DIAS[d.getDay()]+' '+d.getDate()+' de '+MESES[d.getMonth()];
+  $('printHdr').textContent='Tabla de Pabellón · '+DIAS[d.getDay()]+' '+d.getDate()+' de '+MESES[d.getMonth()]+' '+d.getFullYear();
+  $('tabla').innerHTML='<div class="empty">Cargando…</div>';
+  try{ CASOS=await rpc('smi_tabla_pabellon',{p_clave:CLAVE,p_desde:f,p_hasta:f}); CASOS=Array.isArray(CASOS)?CASOS:[]; }
+  catch(e){ $('tabla').innerHTML='<div class="empty">Error: '+esc(e.message)+'</div>'; return; }
+  render();
+}
+
+function dur(m){ m=+m||0; if(!m) return '—'; const h=Math.floor(m/60), mm=m%60; return (h?h+'h ':'')+(mm?mm+'m':(h?'':'0m')); }
+function hhmm(t){ if(!t) return '—'; return String(t).slice(0,5); }
+function modal(x){
+  const m=(x.modalidad||'').toLowerCase();
+  const hosp = m ? m.includes('hosp') : !!x.hospitalizacion;
+  return '<span class="tag '+(hosp?'hosp':'amb')+'">'+(hosp?'Hospitalizado':'Ambulatorio')+'</span>';
+}
+function estado(x){
+  if(x.estado==='en_cirugia') return '<span class="est cir">En cirugía</span>';
+  if(x.estado==='finalizada') return '<span class="est fin">Finalizada</span>';
+  return '';
+}
+
+function render(){
+  if(!CASOS.length){ $('tabla').innerHTML='<div class="empty">No hay cirugías programadas este día.</div>'; return; }
+  let h='<table><tr>'
+    +'<th>Pab</th><th>Hora</th><th>Paciente</th><th>RUT</th><th>Cirugía</th><th>Cirujano</th>'
+    +'<th>Anestesista</th><th>Tiempo</th><th>Modalidad</th><th>Teléfono</th><th>Observaciones</th></tr>';
+  CASOS.forEach(x=>{
+    const pcls=x.pabellon===1?'p1':x.pabellon===2?'p2':'p3';
+    h+='<tr>'
+      +'<td><span class="pab '+pcls+'">'+(x.pabellon||'—')+'</span></td>'
+      +'<td class="mut">'+hhmm(x.hora_plan)+'</td>'
+      +'<td><div class="pac">'+esc(x.paciente||'—')+'</div>'
+        +'<div class="mut" style="font-size:10.5px">'+esc(x.folio||'')+' '+estado(x)+(!x.ficha_ok?' <span class="sinficha">⚠ sin ficha</span>':'')+'</div></td>'
+      +'<td class="mut">'+esc(x.rut||'—')+'</td>'
+      +'<td>'+esc(x.cirugia||'—')+'</td>'
+      +'<td>'+esc(x.cirujano||'—')+'</td>'
+      +'<td>'+esc(x.anestesista||'—')+'</td>'
+      +'<td class="mut">'+dur(x.duracion_cotizada_min)+'</td>'
+      +'<td>'+modal(x)+'</td>'
+      +'<td class="mut">'+esc(x.telefono||'—')+'</td>'
+      +'<td class="obs">'+esc(x.observaciones||'')+'</td>'
+      +'</tr>';
+  });
+  h+='</table>';
+  $('tabla').innerHTML=h;
+}
+</script>
+</body>
+</html>
