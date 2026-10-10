@@ -110,7 +110,7 @@ const SUPA_URL='https://rhpguniznuhljiigwetq.supabase.co';
 const SUPA_KEY='sb_publishable_lVaI9a2wWFa0PSL3edPiRA_cVMlXDwG';
 const $=id=>document.getElementById(id);
 const esc=s=>(s==null?'':String(s)).replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
-let CLAVE='', SESION='', CASOS=[];
+let CLAVE='', SESION='', CASOS=[], PUEDE_EDITAR=false;
 const DIAS=['Domingo','Lunes','Martes','Miércoles','Jueves','Viernes','Sábado'];
 const MESES=['enero','febrero','marzo','abril','mayo','junio','julio','agosto','septiembre','octubre','noviembre','diciembre'];
 
@@ -131,7 +131,8 @@ async function entrar(){
     const u=await rpc('smi_login_lector',{p_clave:c});
     const usr=Array.isArray(u)?u[0]:u;
     if(!usr || !usr.nombre){ $('gateMsg').textContent='Clave sin acceso a la tabla.'; return; }
-    CLAVE=c; SESION=usr.nombre; $('whoTxt').textContent=SESION;
+    CLAVE=c; SESION=usr.nombre; PUEDE_EDITAR=!!usr.puede_editar;
+    $('whoTxt').textContent=SESION+(PUEDE_EDITAR?'':' · solo lectura');
     $('gate').style.display='none'; $('app').style.display='block';
     irHoy();
   }catch(e){ $('gateMsg').textContent='Error de conexión.'; }
@@ -184,11 +185,43 @@ function render(){
       +'<td class="mut">'+dur(x.duracion_cotizada_min)+'</td>'
       +'<td>'+modal(x)+'</td>'
       +'<td class="mut">'+esc(x.telefono||'—')+'</td>'
-      +'<td class="obs">'+esc(x.observaciones||'')+'</td>'
+      +obsCell(x)
       +'</tr>';
   });
   h+='</table>';
   $('tabla').innerHTML=h;
+}
+
+function fechaCorta(t){ if(!t) return ''; const d=new Date(t); return String(d.getDate()).padStart(2,'0')+'/'+String(d.getMonth()+1).padStart(2,'0')+' '+String(d.getHours()).padStart(2,'0')+':'+String(d.getMinutes()).padStart(2,'0'); }
+function obsCell(x){
+  const txt = x.obs_equipo ? esc(x.obs_equipo) : (PUEDE_EDITAR?'<span class="mut" style="font-style:italic">+ agregar</span>':'');
+  const meta = x.obs_equipo_por ? '<div class="mut" style="font-size:9px;margin-top:2px">— '+esc(x.obs_equipo_por)+' · '+fechaCorta(x.obs_equipo_at)+'</div>' : '';
+  if(PUEDE_EDITAR) return '<td class="obs editable" style="cursor:pointer" title="Editar observación" onclick="editObs(\''+x.id+'\')">'+txt+meta+' <span class="mut">✎</span></td>';
+  return '<td class="obs">'+txt+meta+'</td>';
+}
+function editObs(id){
+  const x=CASOS.find(c=>c.id===id)||{};
+  const ov=document.createElement('div');
+  ov.style.cssText='position:fixed;inset:0;background:rgba(28,23,25,.55);display:flex;align-items:center;justify-content:center;z-index:99999;padding:14px';
+  ov.innerHTML='<div style="background:var(--card);border-radius:14px;padding:22px;width:min(94vw,460px);box-shadow:0 12px 40px rgba(0,0,0,.28)">'
+    +'<div style="font-family:var(--serif),Georgia,serif;font-size:20px;font-weight:600;margin-bottom:2px">Observación del equipo</div>'
+    +'<div style="font-size:12.5px;color:var(--muted);margin-bottom:12px">'+esc(x.paciente||'')+' · '+esc(x.folio||'')+'</div>'
+    +'<textarea id="__obsTa" rows="4" style="width:100%;box-sizing:border-box;padding:10px 12px;border:1px solid var(--line);border-radius:10px;font-family:var(--sans);font-size:14px;resize:vertical" placeholder="Lo que haya que avisar al equipo (del llamado de enfermería, etc.)…"></textarea>'
+    +'<div id="__obsMsg" style="font-size:12.5px;min-height:16px;margin:6px 2px 0"></div>'
+    +'<div style="display:flex;gap:8px;margin-top:8px">'
+    +'<button id="__obsCancel" type="button" style="flex:1;padding:10px;border:1px solid var(--line);background:#fff;border-radius:9px;font-weight:600;cursor:pointer">Cancelar</button>'
+    +'<button id="__obsOk" type="button" style="flex:1;padding:10px;border:none;background:var(--grad);color:#fff;border-radius:9px;font-weight:700;cursor:pointer">Guardar</button>'
+    +'</div></div>';
+  document.body.appendChild(ov);
+  const ta=ov.querySelector('#__obsTa'),msg=ov.querySelector('#__obsMsg'),ok=ov.querySelector('#__obsOk'),cancel=ov.querySelector('#__obsCancel');
+  ta.value=x.obs_equipo||''; setTimeout(()=>ta.focus(),40);
+  function cerrar(){ ov.remove(); }
+  cancel.onclick=cerrar; ov.addEventListener('click',e=>{ if(e.target===ov) cerrar(); });
+  ok.onclick=async()=>{
+    ok.disabled=true; msg.style.color='var(--muted)'; msg.textContent='Guardando…';
+    try{ await rpc('smi_tabla_obs_guardar',{p_clave:CLAVE,p_caso_id:id,p_obs:ta.value}); cerrar(); await cargar(); }
+    catch(e){ msg.style.color='var(--neg)'; msg.textContent='Error: '+(e&&e.message?e.message:e); ok.disabled=false; }
+  };
 }
 </script>
 </body>
