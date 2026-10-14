@@ -89,7 +89,10 @@ tr:last-child td{border-bottom:0}
     <span class="chip" onclick="rango('mes')">Este mes</span>
     <span class="chip" onclick="rango('30')">Últimos 30 días</span>
     <span class="chip" onclick="rango('hoy')">Hoy</span>
+    <button onclick="exportarConsumo()" style="margin-left:auto;background:var(--deep,#B22030);color:#fff">⬇ Exportar consumo (Medilink)</button>
   </div>
+
+  <div id="expMsg" style="display:none;margin:4px 0 14px;font-size:13px;padding:10px 12px;border-radius:10px;border:1px solid var(--line)"></div>
 
   <div id="out"></div>
   <div class="foot">Cada salida quedó registrada al entregarse, con quién pidió y quién entregó. Compárelo con el consumo o el conteo de Medilink para cuadrar.</div>
@@ -186,6 +189,73 @@ function render(){
   $('out').innerHTML=h;
 }
 function setVista(v){ VISTA=v; render(); }
+
+/* ───── Exportar consumo del período, traducido a jerga Medilink ───── */
+const normNom=s=>(s||'').toUpperCase().replace(/\s+/g,' ').trim();
+function expEstado(html,tipo){
+  const el=$('expMsg'); el.style.display='block'; el.innerHTML=html;
+  const col = tipo==='err' ? ['#FBE9EB','var(--neg,#C0202F)'] : tipo==='warn' ? ['#FFF6E6','var(--warn,#B7791F)'] : ['#EAF5EF','var(--pos,#1E7A4D)'];
+  el.style.background=col[0]; el.style.borderColor=col[1]; el.style.color=col[1];
+}
+async function exportarConsumo(){
+  const desde=$('desde').value, hasta=$('hasta').value;
+  if(!desde||!hasta){ expEstado('Elige un rango de fechas primero.','warn'); return; }
+  expEstado('Leyendo consumo y traduciendo a nombres de Medilink…','ok');
+
+  // 1) Consumo del período (fresco, según las fechas mostradas)
+  let res;
+  try{ const rep=await rpc('smi_salidas_reporte',{p_clave:CLAVE,p_desde:desde,p_hasta:hasta}); res=(rep&&rep.resumen)||[]; }
+  catch(e){ expEstado('Error al leer el consumo: '+esc(e.message||''),'err'); return; }
+  if(!res.length){ expEstado('No hay consumo en este período para exportar.','warn'); return; }
+
+  // 2) Diccionario (mismo que usa Bodega), leído al revés: nombre OR → nombre Medilink + bodega
+  let dic=[];
+  try{ const d=await rpc('smi_stock_tablero',{p_clave:CLAVE}); dic=(d&&d.items)||[]; }
+  catch(e){ expEstado('No pude leer el diccionario de stock (¿tu clave tiene acceso a Bodega?): '+esc(e.message||''),'err'); return; }
+  const idx={};
+  dic.forEach(it=>{
+    const k=normNom(it.nombre);
+    if(k && !idx[k]) idx[k]={medilink:it.producto||'', bodega:it.sucursal||it.bodega||'', mapeado:!!it.mapeado};
+  });
+
+  // 3) Cruce consumo → Medilink, agregando por nombre Medilink
+  const porMed={}, sinEquiv=[];
+  res.forEach(r=>{
+    const nombreOR=r.descripcion||'', cant=+r.total||0;
+    const m=idx[normNom(nombreOR)];
+    if(m && m.medilink){
+      const key=normNom(m.medilink);
+      if(!porMed[key]) porMed[key]={medilink:m.medilink, bodega:m.bodega, cant:0, ors:[]};
+      porMed[key].cant+=cant;
+      if(porMed[key].ors.indexOf(nombreOR)<0) porMed[key].ors.push(nombreOR);
+    } else { sinEquiv.push({nombreOR,cant}); }
+  });
+  const trad=Object.values(porMed).sort((a,b)=>a.medilink.localeCompare(b.medilink,'es'));
+
+  // 4) CSV (; para Excel chileno, BOM UTF-8)
+  const q=v=>'"'+String(v==null?'':v).replace(/"/g,'""')+'"';
+  const L=[];
+  L.push(['CONSUMO A DESCARGAR EN MEDILINK']);
+  L.push(['Período', desde+' a '+hasta]);
+  L.push([]);
+  L.push(['Nombre Medilink','Nombre OR','Cantidad','Bodega']);
+  trad.forEach(t=> L.push([t.medilink, t.ors.join(' / '), t.cant, t.bodega]));
+  if(sinEquiv.length){
+    L.push([]); L.push([]);
+    L.push(['SIN EQUIVALENTE EN MEDILINK — REVISAR (no descargar a ciegas)']);
+    L.push(['Nombre OR','Cantidad']);
+    sinEquiv.sort((a,b)=>a.nombreOR.localeCompare(b.nombreOR,'es')).forEach(s=> L.push([s.nombreOR, s.cant]));
+  }
+  const csv='﻿'+L.map(row=>row.map(q).join(';')).join('\r\n');
+  const blob=new Blob([csv],{type:'text/csv;charset=utf-8'});
+  const a=document.createElement('a');
+  a.href=URL.createObjectURL(blob); a.download='consumo-medilink_'+desde+'_'+hasta+'.csv';
+  document.body.appendChild(a); a.click(); a.remove(); setTimeout(()=>URL.revokeObjectURL(a.href),2000);
+
+  expEstado('Planilla generada · <b>'+trad.length+'</b> producto(s) traducido(s) a Medilink'
+    + (sinEquiv.length ? ' · <b>'+sinEquiv.length+' sin equivalente</b> (van al final de la planilla, para revisar antes de descargar).'
+                       : ' · todos con equivalente en Medilink.'), sinEquiv.length?'warn':'ok');
+}
 </script>
 </body>
 </html>

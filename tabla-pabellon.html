@@ -120,7 +120,7 @@ const SUPA_URL='https://rhpguniznuhljiigwetq.supabase.co';
 const SUPA_KEY='sb_publishable_lVaI9a2wWFa0PSL3edPiRA_cVMlXDwG';
 const $=id=>document.getElementById(id);
 const esc=s=>(s==null?'':String(s)).replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
-let CLAVE='', SESION='', CASOS=[], PERSONAL={}, PUEDE_EDITAR=false;
+let CLAVE='', SESION='', CASOS=[], PERSONAL={}, PUEDE_EDITAR=false, PUEDE_JEFE=false;
 const DIAS=['Domingo','Lunes','Martes','Miércoles','Jueves','Viernes','Sábado'];
 const MESES=['enero','febrero','marzo','abril','mayo','junio','julio','agosto','septiembre','octubre','noviembre','diciembre'];
 
@@ -141,7 +141,7 @@ async function entrar(){
     const u=await rpc('smi_login_lector',{p_clave:c});
     const usr=Array.isArray(u)?u[0]:u;
     if(!usr || !usr.nombre){ $('gateMsg').textContent='Clave sin acceso a la tabla.'; return; }
-    CLAVE=c; SESION=usr.nombre; PUEDE_EDITAR=!!usr.puede_editar;
+    CLAVE=c; SESION=usr.nombre; PUEDE_EDITAR=!!usr.puede_editar; PUEDE_JEFE=!!usr.es_jefe;
     $('whoTxt').textContent=SESION+(PUEDE_EDITAR?'':' · solo lectura');
     $('gate').style.display='none'; $('app').style.display='block';
     irHoy();
@@ -177,9 +177,9 @@ function renderPersonal(){
     if(d.enfermero) partes.push('<span class="rol">Enfermero/a:</span> '+esc(d.enfermero));
     if(d.tens) partes.push('<span class="rol">TENS:</span> '+esc(d.tens));
     const txt = partes.length ? partes.join('<br>')
-      : (PUEDE_EDITAR?'<span class="mut" style="font-style:italic">— sin asignar —</span>':'<span class="mut">—</span>');
+      : (PUEDE_JEFE?'<span class="mut" style="font-style:italic">— sin asignar —</span>':'<span class="mut">—</span>');
     const meta = d.por ? '<div class="pm">— '+esc(d.por)+' · '+fechaCorta(d.at)+'</div>' : '';
-    const ed = PUEDE_EDITAR ? '<span class="ed" onclick="editPersonal('+p+')" title="Editar personal">✎</span>' : '';
+    const ed = PUEDE_JEFE ? '<span class="ed" onclick="editPersonal('+p+')" title="Editar personal">✎</span>' : '';
     h+='<div class="pcard p'+p+'"><div class="ph"><span>Pabellón '+p+'</span>'+ed+'</div>'
       +'<div class="pt">'+txt+'</div>'+meta+'</div>';
   }
