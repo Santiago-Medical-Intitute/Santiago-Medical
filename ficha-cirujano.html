@@ -285,6 +285,7 @@ function analizar(datos){
   const op=datos.filter(x=>x.estado==='operada' && enRango(x.fecha_operacion,W));
   const opSinFecha = W.desde ? datos.filter(x=>x.estado==='operada' && !x.fecha_operacion).length : 0;
   const montoOpTot=op.reduce((s,x)=>s+(+x.total||0),0);
+  const opPac = new Set(op.map(x=>(x.rut&&String(x.rut).trim())?('rut:'+String(x.rut).trim()):('folio:'+x.folio))).size;
 
   // CONVERSIÓN: cotizaciones por FECHA DE COTIZACIÓN dentro de la ventana
   const datosCot=datos.filter(x=>enRango(x.creada_en,W));
@@ -329,7 +330,7 @@ function analizar(datos){
   let cxTiempoExtra=0;
   Object.values(ext).forEach(e=>{ if(e.fam['Tiempo adicional']) cxTiempoExtra+=e.fam['Tiempo adicional'].casos; });
 
-  return {datos:datosCot,months,op,conv,conv6,pacTot,pacOp,pacPerd,pacRes,convAll,mix,hCotTot,hRealTot,nDur,nExc,deltaProm,extTot,extPct,ext,montoOpTot,cxTiempoExtra,periodoLabel:W.label,opSinFecha,todo:!W.desde};
+  return {datos:datosCot,months,op,conv,conv6,pacTot,pacOp,pacPerd,pacRes,convAll,mix,hCotTot,hRealTot,nDur,nExc,deltaProm,extTot,extPct,ext,montoOpTot,cxTiempoExtra,periodoLabel:W.label,opSinFecha,opPac,todo:!W.desde};
 }
 
 /* ---- matriz de conversión de una fila (por mes, con flecha) ---- */
@@ -477,14 +478,21 @@ function kpiCard(lab,val,sub,cls){ return '<div class="kpi '+(cls||'')+'"><div c
 function funnel(A){
   const op=A.pacOp, pe=A.pacPerd, ab=A.pacTot-A.pacRes, tot=A.pacTot||1;
   const seg=(n,c,txt,lab)=> n>0?'<div style="width:'+(n/tot*100).toFixed(1)+'%;background:'+c+';color:'+txt+'" title="'+lab+': '+n+'">'+n+'</div>':'';
-  let h='<div class="sub" style="margin-bottom:2px">'+A.datos.length+' cotizaciones  →  <b>'+A.pacTot+' pacientes</b> distintos (RUT)</div>';
+  // Producción del período (por fecha de operación) — lo que realmente se operó
+  let h='<div class="sub" style="margin-bottom:10px;font-size:14px"><b>'+A.op.length+'</b> cirugía'+(A.op.length===1?'':'s')+' operada'+(A.op.length===1?'':'s')+' en este período'
+    +(A.montoOpTot?' · <b>'+clpK(A.montoOpTot)+'</b>':'')+' <span class="mp">(por fecha de operación)</span></div>';
+  // Embudo de las cotizaciones del período (por fecha de cotización)
+  h+='<div class="sub" style="margin-bottom:2px">Cotizaciones del período: '+A.datos.length+'  →  <b>'+A.pacTot+' pacientes</b> distintos (RUT)</div>';
   h+='<div class="funnel">'+seg(op,'var(--fOp)','#fff','Operaron')+seg(ab,'var(--fAb)','#4a3800','Abiertos')+seg(pe,'var(--fPe)','#fff','Desistieron')+'</div>';
   h+='<div class="fleg">'
-    +'<span><span class="dot" style="background:var(--fOp)"></span>Operaron <b>'+op+'</b> ('+A.op.length+' cirugías)</span>'
+    +'<span><span class="dot" style="background:var(--fOp)"></span>Operaron <b>'+op+'</b></span>'
     +'<span><span class="dot" style="background:var(--fAb)"></span>Abiertos <b>'+ab+'</b> · aún pueden operar</span>'
     +'<span><span class="dot" style="background:var(--fPe)"></span>Desistieron <b>'+pe+'</b></span></div>';
-  h+='<div class="sub" style="margin-top:9px">Conversión: <b>'+op+' de '+A.pacTot+' pacientes que cotizaron = '+A.convAll+'%</b>.'
-    +(ab>0?' Hay <b>'+ab+' abiertos</b> aún en juego — al concretarse pueden subir esta conversión.':'')+'</div>';
+  h+='<div class="sub" style="margin-top:9px">Conversión del cohorte: <b>'+op+' de '+A.pacTot+' pacientes que cotizaron en este período = '+A.convAll+'%</b>.'
+    +((op===0 && A.op.length>0)
+        ? ' Las <b>'+A.op.length+'</b> cirugías operadas en el período son de pacientes cotizados antes (por eso no suman a esta conversión).'
+        : (ab>0?' Hay <b>'+ab+' abiertos</b> aún en juego — al concretarse pueden subir esta conversión.':''))
+    +'</div>';
   return h;
 }
 
@@ -493,7 +501,7 @@ function render(nom,A){
     + (A.opSinFecha?' · <b style="color:var(--deep,#B22030)">'+A.opSinFecha+' operada(s) sin fecha registrada</b> — no entran en el período, hay que cerrarlas en Sala':'');
   $('kpis').innerHTML=
     kpiCard('Pacientes',A.pacTot,'distintos (RUT)')+
-    kpiCard('Cirugías operadas',A.op.length,'en '+A.pacOp+' pacientes')+
+    kpiCard('Cirugías operadas',A.op.length,'en '+A.opPac+' paciente'+(A.opPac===1?'':'s'))+
     kpiCard('Conversión',A.convAll+'%',A.pacOp+' de '+A.pacTot+' pacientes (RUT)')+
     kpiCard('Cotizaciones',A.datos.length,'folios (varios por paciente)')+
     kpiCard('Horas de pabellón',h1dec(A.hRealTot)+' h','usadas (real)')+
