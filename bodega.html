@@ -43,6 +43,12 @@ body{margin:0;background:var(--bg);color:var(--ink);font-family:var(--sans);font
 .sect-t{font-family:var(--serif);font-weight:700;font-size:19px;margin:20px 0 10px;display:flex;align-items:center;gap:8px}
 .sect-t .c{font-size:13px;color:#fff;background:var(--neg);border-radius:20px;padding:1px 9px;font-family:var(--sans);font-weight:700}
 .sect-t.baj .c{background:var(--warn)}
+.secnav{position:sticky;top:0;z-index:30;background:var(--bg);display:flex;flex-wrap:wrap;gap:8px;padding:10px 0 11px;margin-bottom:4px;border-bottom:1px solid var(--line)}
+.snav-chip{border:1px solid var(--line);background:var(--card);border-radius:20px;padding:6px 13px;font-family:var(--sans);font-size:13px;font-weight:600;cursor:pointer;color:var(--ink);display:inline-flex;align-items:center;gap:6px;white-space:nowrap}
+.snav-chip:hover{border-color:var(--crimson)}
+.snav-chip .cnt{background:var(--ink);color:#fff;border-radius:20px;font-size:11px;font-weight:700;padding:1px 7px;min-width:20px;text-align:center}
+.snav-chip.neg .cnt{background:var(--neg)} .snav-chip.warn .cnt{background:var(--warn)}
+#secCrit,#secVence,#secBajo,#invHead{scroll-margin-top:62px}
 .row{background:var(--card);border:1px solid var(--line);border-radius:12px;padding:11px 15px 11px 18px;margin-bottom:8px;position:relative;display:flex;justify-content:space-between;align-items:center;gap:12px;flex-wrap:wrap}
 .row .accent{position:absolute;left:0;top:10px;bottom:10px;width:4px;border-radius:3px}
 .row.critico .accent{background:var(--neg)} .row.bajo .accent{background:var(--warn)}
@@ -101,11 +107,12 @@ table.inv tr:hover td{background:var(--tint)}
 
   <div class="kpis" id="kpis"></div>
   <div class="upd" id="upd"></div>
+  <div class="secnav" id="secNav"></div>
   <div id="secCrit"></div>
   <div id="secVence"></div>
   <div id="secBajo"></div>
 
-  <div class="sect-t">Inventario completo</div>
+  <div class="sect-t" id="invHead">Inventario completo</div>
   <div class="tools"><input type="text" id="buscar" placeholder="Buscar producto o proveedor…" oninput="renderTabla()"></div>
   <div id="tabla"></div>
 
@@ -171,8 +178,23 @@ function render(){
   $('secCrit').innerHTML = crit.length ? '<div class="sect-t">🔴 Stock crítico <span class="c">'+crit.length+'</span></div>'+crit.map(fila).join('') : '';
   $('secVence').innerHTML = venc.length ? '<div class="sect-t">⏳ Por vencer / vencidos <span class="c">'+venc.length+'</span></div>'+venc.map(filaVence).join('') : '';
   $('secBajo').innerHTML = baj.length ? '<div class="sect-t baj">🟠 Stock bajo <span class="c">'+baj.length+'</span></div>'+baj.map(fila).join('') : '';
+
+  // Barra de accesos rápidos (sticky), con el conteo de cada sección
+  let nav='';
+  if(crit.length) nav+=snavChip('secCrit','🔴','Stock crítico',crit.length,'neg');
+  if(venc.length) nav+=snavChip('secVence','⏳','Por vencer',venc.length,'warn');
+  if(baj.length)  nav+=snavChip('secBajo','🟠','Stock bajo',baj.length,'warn');
+  nav+=snavChip('invHead','📦','Inventario',ITEMS.length,'');
+  nav+='<button class="snav-chip" onclick="irBuscar()">🔎 Buscar</button>';
+  $('secNav').innerHTML=nav;
+
   renderTabla();
 }
+function snavChip(id,emoji,label,n,cls){
+  return '<button class="snav-chip'+(cls?' '+cls:'')+'" onclick="irA(\''+id+'\')">'+emoji+' '+label+' <span class="cnt">'+n+'</span></button>';
+}
+function irA(id){ const el=document.getElementById(id); if(el) el.scrollIntoView({behavior:'smooth',block:'start'}); }
+function irBuscar(){ const el=document.getElementById('buscar'); if(el){ el.scrollIntoView({behavior:'smooth',block:'center'}); setTimeout(()=>el.focus(),300); } }
 function filaVence(i){
   const v=i.vence==='vencido';
   const dtxt = v ? ('VENCIDO hace '+Math.abs(i.dias_venc)+' d') : ('vence en '+i.dias_venc+' d');
