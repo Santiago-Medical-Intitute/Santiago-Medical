@@ -253,7 +253,7 @@ async function editarNombre(el){
 }
 
 /* ───── mapear al diccionario ───── */
-const CATS_MAP=['Insumo','Medicamento','Sutura'];
+const CATS_MAP=['Insumo','Medicamento','Medicamento Controlado','Sutura'];
 function mapBtn(i){
   return '<span class="badge-nm" style="cursor:pointer;background:#FBE9EB;color:var(--neg)" data-prod="'+esc(i.producto)+'" onclick="event.stopPropagation();abrirMapeo(this)" title="Mapear al diccionario">sin mapear · mapear ✎</span>';
 }
@@ -292,7 +292,8 @@ function abrirMapeo(el){
   const nom=ov.querySelector('#__mpNom'),cat=ov.querySelector('#__mpCat'),pal=ov.querySelector('#__mpPal'),
         msg=ov.querySelector('#__mpMsg'),ok=ov.querySelector('#__mpOk'),cancel=ov.querySelector('#__mpCancel');
   nom.value=nombrePre; pal.value=palabraDom(prod);
-  if(/(^|-)MED|MEDICAMENTO|COMPRIMIDO|AMPOLLA|C[AÁ]PSULA/i.test(prod)) cat.value='Medicamento';
+  if(/(^|-)MED-?CTRL|CONTROLAD/i.test(prod)) cat.value='Medicamento Controlado';
+  else if(/(^|-)MED|MEDICAMENTO|COMPRIMIDO|AMPOLLA|C[AÁ]PSULA/i.test(prod)) cat.value='Medicamento';
   else if(/(^|-)SUT|SUTURA|VICRYL|PROLENE|MONOCRYL|NYLON|SEDA/i.test(prod)) cat.value='Sutura';
   else cat.value='Insumo';
   setTimeout(()=>nom.focus(),40);
