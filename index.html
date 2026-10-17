@@ -179,5 +179,10 @@ footer code{font-family:ui-monospace,SFMono-Regular,Menlo,monospace;font-size:.9
   Uso interno · Santiago Medical Institute. Todas las páginas piden la clave de operaciones,
   salvo <code>pre.html</code>, que se abre con el enlace y token entregado al paciente.
 </footer>
+
+<script>
+/* Cada panel se abre en una pestaña nueva, sin perder el índice */
+document.querySelectorAll('a.card').forEach(a=>{ a.target='_blank'; a.rel='noopener'; });
+</script>
 </body>
 </html>

@@ -126,7 +126,7 @@ table.it td.r{text-align:right;font-variant-numeric:tabular-nums}
   </div>
 
   <div class="selbar">
-    <div class="fld"><label>Cirujano</label><select id="selCir" onchange="elegir()"><option value="">— Elige —</option></select></div>
+    <div class="fld"><label>Cirujano</label><select id="selCir" onchange="onCirChange()"><option value="">— Elige —</option></select></div>
     <div class="fld"><label>Cirugía</label><select id="selCx" onchange="elegir()"><option value="">— Elige —</option></select></div>
   </div>
 
@@ -142,7 +142,7 @@ const SUPA_URL='https://rhpguniznuhljiigwetq.supabase.co';
 const SUPA_KEY='sb_publishable_lVaI9a2wWFa0PSL3edPiRA_cVMlXDwG';
 const $=id=>document.getElementById(id);
 let CLAVE='', SESION='', CAT={cirujanos:[],cirugias:[],fichas:[]}, FICHA=null, MARKUP=2.5;
-let CIR='', CX='';
+let CIR='', CX='', MED_CIRUGIAS={};
 const PISO_INS=150;  /* piso: el arancel de cada insumo no baja de $150 */
 const NOCOSTO = new URLSearchParams(location.search).get('nocosto')==='1'; /* Bodega (Christian): oculta el costo, deja el arancel */
 
@@ -175,10 +175,33 @@ async function entrar(){
 
 async function cargarCat(){
   try{ CAT=await rpc('smi_ficha_catalogos',{p_clave:CLAVE}); }catch(e){ CAT={cirujanos:[],cirugias:[],fichas:[]}; }
+  // Mapeo cirujano → cirugías que realiza (convenios), igual que el cotizador
+  try{
+    const d=await rpc('smi_catalogo',{p_clave:CLAVE}); MED_CIRUGIAS={};
+    (d.convenios||[]).forEach(v=>{ const k=String(v.cirujano_id); (MED_CIRUGIAS[k]=MED_CIRUGIAS[k]||[]).push(String(v.cirugia_id)); });
+  }catch(e){ MED_CIRUGIAS={}; }
   $('selCir').innerHTML='<option value="">— Elige —</option>'+(CAT.cirujanos||[]).map(c=>'<option value="'+esc(c.id)+'">'+esc(c.nombre)+'</option>').join('');
-  $('selCx').innerHTML='<option value="">— Elige —</option>'+(CAT.cirugias||[]).map(c=>'<option value="'+esc(c.id)+'">'+esc(c.nombre)+'</option>').join('');
+  poblarCx();
   renderMain();
 }
+
+/* Llena el selector de cirugías filtrado por las que hace el cirujano elegido (convenios).
+   Si el cirujano no tiene convenios cargados, muestra todas (no dejar vacío).
+   ensureCx: id de una cirugía que debe incluirse sí o sí (p.ej. al abrir una ficha ya existente). */
+function poblarCx(ensureCx){
+  const sel=$('selCx'); if(!sel) return;
+  const cir=$('selCir').value; const prev=sel.value;
+  let lista=(CAT.cirugias||[]);
+  const ids=MED_CIRUGIAS[cir]||[];
+  if(cir && ids.length){ const s=new Set(ids); if(ensureCx) s.add(String(ensureCx)); lista=lista.filter(c=>s.has(String(c.id))); }
+  lista=lista.slice().sort((a,b)=>(a.nombre||'').localeCompare(b.nombre||'','es'));
+  sel.innerHTML='<option value="">— Elige —</option>'+lista.map(c=>'<option value="'+esc(c.id)+'">'+esc(c.nombre)+'</option>').join('');
+  const keep = ensureCx!=null ? String(ensureCx) : prev;
+  if(keep && lista.some(c=>String(c.id)===keep)) sel.value=keep; else sel.value='';
+}
+
+/* Al cambiar de cirujano: re-filtra las cirugías y limpia la selección anterior */
+function onCirChange(){ poblarCx(); elegir(); }
 function nombreCir(id){ const c=(CAT.cirujanos||[]).find(x=>x.id===id); return c?c.nombre:id; }
 function nombreCx(id){ const c=(CAT.cirugias||[]).find(x=>x.id===id); return c?c.nombre:id; }
 
@@ -188,7 +211,7 @@ async function elegir(){
   else FICHA=null;
   renderMain();
 }
-window.abrirFicha=function(cir,cx){ $('selCir').value=cir; $('selCx').value=cx; elegir(); window.scrollTo(0,0); };
+window.abrirFicha=function(cir,cx){ $('selCir').value=cir; poblarCx(cx); $('selCx').value=cx; elegir(); window.scrollTo(0,0); };
 
 function renderMain(){
   if(!(CIR && CX)){
