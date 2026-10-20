@@ -45,7 +45,7 @@ body{margin:0;background:var(--bg);color:var(--ink);font-family:var(--sans);font
 .kpi.hero{background:var(--grad);border:0;color:#fff}
 .kpi.hero .lab,.kpi.hero .sub{color:rgba(255,255,255,.85)}
 .kpi.hero .val{color:#fff}
-.kpi .val.pos{color:var(--pos)} .kpi .val.neg{color:var(--neg)}
+.kpi .val.pos{color:var(--pos)} .kpi .val.neg{color:var(--neg)} .kpi .val.warn{color:var(--warn)}
 .mes-sel{display:flex;gap:6px;flex-wrap:wrap;margin-bottom:12px}
 .mbtn{border:1px solid var(--line);background:var(--card);color:var(--muted);font:inherit;font-size:13px;font-weight:600;padding:7px 13px;border-radius:9px;cursor:pointer}
 .mbtn.on{background:var(--grad);color:#fff;border:0}
@@ -383,6 +383,10 @@ function renderKpis(){
   const ocup=Math.round(hOp/560*100);
   const mgSum=op.reduce((s,x)=>{ const d=x.detalle||{}; return s+(+d.margen_pct||0)*(+x.total||0); },0);
   const mgPond=montoOp?Math.round(mgSum/montoOp*100):0;
+  // --- Agendado del mes (por fecha_cirugia, lo que falta por operar) ---
+  const ag=ROWS.filter(x=>x.fecha_cirugia && mKey(x.fecha_cirugia)===FOCUS && x.estado!=='operada' && x.estado!=='perdida');
+  const agN=ag.length, montoAg=ag.reduce((s,x)=>s+(+x.total||0),0), hAg=ag.reduce((s,x)=>s+(+x.horas||0),0);
+  const ocupProy=Math.round((hOp+hAg)/560*100);
   // --- Pipeline (ahora, sin importar el mes) ---
   const hoy=new Date();
   const abiertas=ROWS.filter(x=>((x.estado==='entregada'&&!esVencida(x))||x.estado==='agendada'||x.estado==='pagada'));
@@ -403,6 +407,10 @@ function renderKpis(){
      kpi('Monto operado',clp(montoOp),'ingreso del mes','pos')+
      kpi('Horas operadas',hOp+' h','de 560 · '+ocup+'% ocupación')+
      kpi('Margen s/venta',mgPond+'%','ponderado sobre lo operado','pos'))+
+   grp('Agendado · '+mShort(FOCUS)+' · por fecha de cirugía',
+     kpi('Agendadas',agN,'programadas · por operar','warn')+
+     kpi('Monto agendado',clp(montoAg),'ingreso proyectado')+
+     kpi('Horas agendadas',hAg+' h','proyección '+ocupProy+'% con lo operado'))+
    grp('Pipeline · ahora (todo lo abierto, sin mes)',
      kpi('En proceso',enProceso,'cotizaciones abiertas')+
      (envejecidas>0?'<div class="kpi" style="cursor:pointer;border-color:var(--neg)" onclick="verLista(\'envejecidas\')"><div class="lab">\u26A0 Envejecidas</div><div class="val neg">'+envejecidas+'</div><div class="sub">15–45 días · toca para verlas</div></div>':'')+
