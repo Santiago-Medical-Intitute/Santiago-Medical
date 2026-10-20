@@ -272,6 +272,13 @@ details[open] summary::before{content:'– '}
             <div class="field"><label class="lab">Dcto. insumos % <small style="color:#857479;font-weight:400">(convenio)</small></label>
               <input type="number" id="dctoIns" min="0" max="12" step="1" value="0"></div>
           </div>
+          <div class="inline">
+            <div class="field"><label class="lab">Descuento adicional (monto) <small style="color:#857479;font-weight:400">(campaña)</small></label>
+              <input type="number" id="descAdicMonto" step="1000" value="0"></div>
+            <div class="field"><label class="lab">Concepto del descuento</label>
+              <input type="text" id="descAdicConcepto" placeholder="Descuento campaña" value="" autocomplete="off"></div>
+          </div>
+          <div id="descAdicHint" style="font-size:12px;color:#857479;margin-top:-4px"></div>
         </div>
       </details>
     </section>
@@ -585,6 +592,7 @@ function estimarCosto(ci){
 }
 const $ = id => document.getElementById(id);
 const clp = n => '$' + Math.round(n).toLocaleString('es-CL');
+const escH = s => String(s==null?'':s).replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
 const fmtMiles = n => Math.round(+n||0).toLocaleString('es-CL');
 const desMiles = s => +String(s==null?'':s).replace(/[^\d]/g,'')||0;
 function normFolio(s){
@@ -647,7 +655,7 @@ $('recBtn').addEventListener('click', async ()=>{
 function aplicarPermisos(nombre){
   const esAdmin = ['Dr. Pantoja','Andrea López','Andrea Lopez'].indexOf(nombre)>=0;
   ES_ADMIN = esAdmin;
-  ['margen','tarifa','fijo','insumo','recup','diacama','dctoIns'].forEach(id=>{
+  ['margen','tarifa','fijo','insumo','recup','diacama','dctoIns','descAdicMonto','descAdicConcepto'].forEach(id=>{
     const el=$(id); if(!el) return;
     el.disabled=!esAdmin;
     el.style.opacity=esAdmin?'':'0.55';
@@ -713,7 +721,7 @@ $('amin').onclick=()=>{ $('adic').value=Math.max(0,(+$('adic').value-0.5)); calc
 $('amax').onclick=()=>{ $('adic').value=Math.min(5,(+$('adic').value+0.5)); calc(); };
 $('cirSel').addEventListener('change',loadSel);
 $('medSel').addEventListener('change',()=>{ poblarCirugias(); loadSel(); });
-['horas','adic','tarifa','insumo','fijo','recup','diacama','dctoIns','pNombre','pRut','pNota'].forEach(id=>$(id).addEventListener('input',calc));
+['horas','adic','tarifa','insumo','fijo','recup','diacama','dctoIns','descAdicMonto','descAdicConcepto','pNombre','pRut','pNota'].forEach(id=>$(id).addEventListener('input',calc));
 if($('glosa')) $('glosa').addEventListener('input',calc);
 $('margen').addEventListener('input',calc);
 
@@ -863,6 +871,11 @@ function buildPDF(folio,fname){
     doc.setFont('helvetica','normal'); doc.setFontSize(9.5); doc.setTextColor(...DEEP);
     doc.text('Descuento '+Math.round((d.dcto_ins||0)*100)+'% (insumos)',M,y);
     doc.text('- '+clp(d.desc_ins),RB,y,{align:'right'}); y+=8;
+  }
+  if(d.desc_campania>0){
+    doc.setFont('helvetica','normal'); doc.setFontSize(9.5); doc.setTextColor(...DEEP);
+    doc.text(String(d.desc_campania_label||'Descuento campaña'),M,y);
+    doc.text('- '+clp(d.desc_campania),RB,y,{align:'right'}); y+=8;
   }
 
   // Total
@@ -1060,7 +1073,9 @@ function calc(){
   const dI=(+$('dctoIns').value||0)/100;               // descuento de insumos (acuerdo con el cirujano)
   const insAddSum=INSUMOS_ADD.reduce((s,x)=>s+(+x.arancel||0),0);
   const descIns=Math.round((insumo+insAddSum)*dI);     // aplica a insumo base + combinados; extras NO
-  const ventaNeta=total-insumo*dI;
+  const descCampania=Math.max(0,+$('descAdicMonto').value||0);           // descuento de campaña: monto fijo (palanca de Finanzas)
+  const campConcepto=($('descAdicConcepto').value||'').trim()||'Descuento campaña';
+  const ventaNeta=total-insumo*dI-descCampania;        // la campaña reduce la venta neta real
   const margen=ventaNeta-costo, margenPct=ventaNeta?margen/ventaNeta:0;
   const totalSiAprueba=subtotal-descAcuerdo-descAdicPedido;
   const margenSiAprueba=totalSiAprueba?(totalSiAprueba-costo)/totalSiAprueba:0;
@@ -1073,7 +1088,7 @@ function calc(){
   const extrasSum=EXTRAS_ADD.reduce((s,x)=>s+(+x.cant||0)*(+x.unit||0),0);
   const addons=anestVal+insAddSum+extrasSum;
   const subtotalCli=subtotal+addons;
-  const totalCli=total+addons-descIns;
+  const totalCli=Math.max(0, total+addons-descIns-descCampania);
 
   // etiquetas del control adicional
   $('margenVal').textContent=Math.round(mg*100)+'%';
@@ -1091,6 +1106,13 @@ function calc(){
   else { bd.style.color='#B7791F'; bd.textContent='⚠ '+pctA+'% requiere autorización de Finanzas. El PDF sale al precio de acuerdo; si se aprueba, el margen quedaría en '+Math.round(margenSiAprueba*100)+'% (bandeja: próximamente).'; }
   $('glosaWrap').style.display=requiereAuth?'block':'none';
   $('dl').textContent=requiereAuth?'Solicitar autorización + PDF (precio de acuerdo)':'Descargar cotización para el cliente (PDF)';
+  if($('descAdicHint')){
+    $('descAdicHint').textContent = descCampania>0
+      ? '«'+campConcepto+'» −'+clp(descCampania)+' saldrá como línea en la cotización del paciente. Margen final '+Math.round(margenPct*100)+'%.'
+      : '';
+    $('descAdicHint').style.color = (descCampania>0 && margenPct<0.15) ? '#C0202F' : '#857479';
+    $('descAdicHint').style.fontWeight = (descCampania>0 && margenPct<0.15) ? '600' : '400';
+  }
 
   // vista interna (líneas)
   let h='';
@@ -1105,6 +1127,7 @@ function calc(){
   INSUMOS_ADD.forEach(x=> h+=row('Insumo: '+x.nombre,'<small>arancel</small>',+x.arancel||0));
   EXTRAS_ADD.forEach(x=> h+=row(x.nombre,'<small>'+x.cant+' × '+clp(x.unit)+'</small>',(+x.cant||0)*(+x.unit||0)));
   if(descIns>0) h+='<div class="li disc"><span class="k">Descuento insumos '+Math.round(dI*100)+'%</span><span class="v">-'+clp(descIns)+'</span></div>';
+  if(descCampania>0) h+='<div class="li disc"><span class="k">'+escH(campConcepto)+' <small>(campaña)</small></span><span class="v">-'+clp(descCampania)+'</span></div>';
   $('lines').innerHTML=h;
 
   const tb=$('totalBox'); $('totalVal').textContent=clp(totalCli);
@@ -1137,13 +1160,14 @@ function calc(){
   d+='<div class="dli sub"><span class="k">Subtotal</span><span class="v">'+clp(subtotalCli)+'</span></div>';
   if(descTotal>0) d+='<div class="dli disc"><span class="k">Descuento '+Math.round(descPDFpct*100)+'% <small>(pabellón, recuperación y día cama)</small></span><span class="v">-'+clp(descTotal)+'</span></div>';
   if(descIns>0) d+='<div class="dli disc"><span class="k">Descuento '+Math.round(dI*100)+'% <small>(insumos)</small></span><span class="v">-'+clp(descIns)+'</span></div>';
+  if(descCampania>0) d+='<div class="dli disc"><span class="k">'+escH(campConcepto)+'</span><span class="v">-'+clp(descCampania)+'</span></div>';
   $('dLines').innerHTML=d;
   $('dTotal').textContent=clp(totalCli);
   $('dNota').textContent=$('pNota').value?('Nota: '+$('pNota').value):'';
   last={paciente:$('pNombre').value,rut:$('pRut').value,cirujano:me.n,cirugia:cirFull,horas:horas,hosp:isH,descuento:Math.round(descPDFpct*1000)/1000,total:Math.round(totalCli),
     detalle:{tiempo:Math.round(pTiempo),tarifa_hora:Math.round(precioHora),precio_objetivo:Math.round(precioObjetivo),insumos:insumo,recuperacion:recup,diacama:pDia,subtotal:Math.round(subtotal),subtotalCli:Math.round(subtotalCli),descuento:Math.round(descTotal),
       anest:anestVal,anest_tarifa:anestFloor,insAdd:INSUMOS_ADD.map(x=>({n:x.nombre,v:+x.arancel||0})),extras:EXTRAS_ADD.map(x=>({n:x.nombre,c:+x.cant||0,u:+x.unit||0})),
-      acuerdo:Math.round(acuerdo*1000)/1000,convenio_registrado:!!cv,costo_insumo:costoIns,desc_ins:descIns,dcto_ins:Math.round(dI*1000)/1000,adicional:adicPDF,adicional_solicitado:adicPed,requiere_auth:requiereAuth,margen_pct:Math.round(margenPct*1000)/1000,margen_si_aprueba:Math.round(margenSiAprueba*1000)/1000},
+      acuerdo:Math.round(acuerdo*1000)/1000,convenio_registrado:!!cv,costo_insumo:costoIns,desc_ins:descIns,dcto_ins:Math.round(dI*1000)/1000,desc_campania:Math.round(descCampania),desc_campania_label:campConcepto,adicional:adicPDF,adicional_solicitado:adicPed,requiere_auth:requiereAuth,margen_pct:Math.round(margenPct*1000)/1000,margen_si_aprueba:Math.round(margenSiAprueba*1000)/1000},
     nota:$('pNota').value,
     requiereAuth:requiereAuth, glosa:$('glosa')?$('glosa').value:'',
     total_con:Math.round(totalSiAprueba+addons), descuento_con:Math.round((baseAcuerdo?(descAcuerdo+descAdicPedido)/baseAcuerdo:0)*1000)/1000};
